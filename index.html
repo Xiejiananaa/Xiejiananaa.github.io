@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI供应链工作台 · 2026-08-07</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#ffffff; --ink:#1f2937; --muted:#64748b; --rule:#e5e7eb;
+  --primary:#2563EB; --primary2:#1e3a8a; --accent:#3B82F6; --success:#10B981;
+  --warning:#F59E0B; --danger:#EF4444; --gold:#F59E0B;
+  --shadow:0 4px 16px rgba(15,23,42,0.06);
+  --shadow-lg:0 12px 32px rgba(15,23,42,0.10);
+  --radius:18px; --font:'PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);color:var(--ink);background:linear-gradient(180deg,#EFF6FF 0%,#f5f7fb 30%,#f5f7fb 100%);min-height:100vh;padding:18px;}
+.page{max-width:1500px;margin:0 auto;}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;border:1px solid var(--rule);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-text h1{font-size:22px;color:#1e3a8a;display:flex;align-items:center;gap:8px;}
+.brand-text h1 .badge{font-size:10px;background:linear-gradient(135deg,#FCD34D,#B45309);color:#fff;padding:2px 8px;border-radius:10px;font-weight:bold;}
+.brand-text .sub{color:#64748b;font-size:12px;margin-top:2px;}
+.clock{padding:8px 16px;border-radius:999px;background:#EFF6FF;color:#1e3a8a;font-size:13px;font-weight:600;}
+.ai-status{padding:8px 16px;border-radius:999px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.ai-status::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+.card{background:#fff;border:1px solid var(--rule);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px;}
+.card-title{display:flex;justify-content:space-between;align-items:center;font-size:17px;font-weight:700;margin-bottom:14px;color:#1e293b;}
+.card-title .tag{font-size:11px;padding:3px 12px;border-radius:999px;background:#EFF6FF;color:#1e3a8a;font-weight:600;}
+
+/* AI日报板块（独立健康分数大卡片 + AI总结） */
+.health-hero{display:flex;align-items:center;gap:40px;padding:8px 8px;flex-wrap:wrap;}
+.health-hero .hh-score{flex:0 0 auto;text-align:center;min-width:180px;}
+.health-hero .hh-score .big{font-size:96px;font-weight:800;line-height:1;color:#1e3a8a;}
+.health-hero .hh-score .big small{font-size:22px;font-weight:600;color:#64748b;margin-left:6px;}
+.health-hero .hh-score .level{display:inline-block;margin-top:8px;font-size:15px;font-weight:700;padding:4px 18px;border-radius:999px;}
+.health-hero .hh-right{flex:1;min-width:280px;}
+.health-hero .hh-bar{height:14px;border-radius:999px;background:#f1f5f9;overflow:hidden;border:1px solid #e5e7eb;}
+.health-hero .hh-bar span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#1e3a8a);}
+.health-hero .hh-hint{font-size:13px;color:#64748b;margin-top:10px;line-height:1.8;}
+.health-hero .hh-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.health-hero .hh-tags .tag-chip{font-size:12px;padding:4px 12px;border-radius:999px;background:#f8fafc;border:1px solid #e5e7eb;color:#475569;font-weight:600;}
+.daily-summary{background:linear-gradient(135deg,#1e3a8a,#2563EB);color:#fff;border-radius:14px;padding:18px 20px;}
+.daily-summary h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.daily-summary p{font-size:13px;line-height:1.9;color:rgba(255,255,255,0.92);margin:4px 0;}
+.daily-summary strong{color:#fff;}
+.daily-summary .value{color:#FCD34D;font-weight:bold;}
+.ai-summary{background:linear-gradient(135deg,#fef9ef,#fffbeb);border:1px solid #fde68a;border-radius:14px;padding:18px 20px;}
+.ai-summary h3{font-size:15px;color:#b9770e;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.ai-summary p{font-size:13px;color:#92400e;line-height:1.9;margin:4px 0;}
+
+/* 关键物料 */
+.rep-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:1100px){.rep-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.rep-grid{grid-template-columns:1fr;}}
+.rep-card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:14px;transition:all 0.3s ease;}
+.rep-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);border-color:#93c5fd;}
+.rep-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.rep-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;}
+.rep-code{color:#94a3b8;font-size:11px;margin-left:auto;}
+.rep-kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;}
+.rep-kv div{display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:3px;color:#64748b;}
+.rep-kv strong{color:#1f2937;}
+.progress{height:7px;border-radius:999px;background:#f1f5f9;overflow:hidden;margin:6px 0;}
+.progress i{display:block;height:100%;border-radius:inherit;}
+.spark-title{font-size:11px;color:#94a3b8;margin:6px 0 2px;}
+.rep-forecast{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin:8px 0;}
+.rep-advice{font-size:12px;padding:8px 10px;border-radius:10px;background:#EFF6FF;color:#1e3a8a;line-height:1.5;}
+
+/* 预测表 */
+.forecast-table{width:100%;border-collapse:collapse;font-size:13px;}
+.forecast-row{animation:forecastIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;}
+.forecast-row:nth-child(1){animation-delay:0.05s}
+.forecast-row:nth-child(2){animation-delay:0.2s}
+.forecast-row:nth-child(3){animation-delay:0.35s}
+.forecast-row:nth-child(4){animation-delay:0.5s}
+@keyframes forecastIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.fc-num{display:inline-block;font-weight:bold;transition:color 0.3s;}
+.fc-num.pulse{animation:numPulse 0.8s ease-out;}
+@keyframes numPulse{0%{transform:scale(0.4);opacity:0.2;color:#3B82F6}60%{transform:scale(1.3);opacity:1}100%{transform:scale(1);opacity:1;color:inherit}}
+.fc-warn-cell{position:relative;padding-left:10px;animation:warnBlink 2s ease-in-out infinite;}
+.fc-warn-cell::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;background:currentColor;border-radius:2px;animation:warnBar 1.2s ease-in-out infinite;}
+@keyframes warnBar{0%,100%{opacity:0.35}50%{opacity:1}}
+@keyframes warnBlink{0%,100%{background:rgba(239,68,68,0)}50%{background:rgba(239,68,68,0.08)}}
+
+.forecast-table th{color:#94a3b8;text-align:left;padding:10px 8px;border-bottom:1px solid #e5e7eb;font-weight:600;background:#f8fafc;}
+.forecast-table td{padding:10px 8px;border-bottom:1px solid #f1f5f9;}
+.forecast-table td strong{color:#1f2937;}
+
+/* 供应商画像 */
+.profile-switch{display:flex;gap:6px;}
+.profile-switch button{padding:6px 14px;border:1px solid #e5e7eb;background:#fff;color:#64748b;border-radius:999px;font-size:12px;cursor:pointer;font-weight:600;}
+.profile-switch button.active{background:linear-gradient(135deg,#1e3a8a,#2563EB);color:#fff;border-color:#1e3a8a;}
+.profile-switch button:hover:not(.active){border-color:#2563EB;color:#1e3a8a;}
+.profile-group{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+@media(min-width:1100px){.profile-group{grid-template-columns:repeat(4,1fr);}}
+.profile-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;cursor:pointer;transition:all 0.3s ease;}
+.profile-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-3px);border-color:#93c5fd;}
+.profile-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.profile-name strong{display:block;font-size:14px;color:#1f2937;}
+.profile-name .profile-region{color:#94a3b8;font-size:11px;}
+.profile-risk{font-size:11px;padding:2px 10px;border-radius:999px;font-weight:600;}
+.profile-score{display:flex;justify-content:space-between;align-items:flex-end;margin:8px 0 12px;padding-bottom:10px;border-bottom:1px dashed #e5e7eb;}
+.profile-score strong{font-size:30px;font-weight:700;}
+.profile-score span{display:block;font-size:11px;}
+.profile-kv{display:grid;gap:6px;font-size:12px;}
+.profile-kv div{display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:4px;color:#64748b;}
+.profile-kv strong{color:#1f2937;}
+.profile-bar{height:6px;border-radius:999px;background:#f1f5f9;overflow:hidden;margin-top:10px;}
+.profile-bar span{display:block;height:100%;border-radius:inherit;}
+.profile-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#94a3b8;}
+.profile-group-sep{grid-column:1/-1;text-align:center;padding:8px 0;color:#64748b;font-size:13px;border-top:1px dashed #e5e7eb;margin-top:10px;}
+
+/* 供应商风险地图 */
+.risk-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+@media(max-width:1100px){.risk-grid{grid-template-columns:1fr;}}
+.region-table{width:100%;border-collapse:collapse;font-size:13px;}
+.region-table th{background:#f8fafc;color:#475569;padding:10px 8px;text-align:left;border-bottom:2px solid #2563EB;font-weight:600;}
+.region-table td{padding:10px 8px;border-bottom:1px solid #f1f5f9;}
+.cat-bars{display:flex;gap:8px;align-items:flex-end;height:240px;padding:14px 0;border-bottom:1px solid #e5e7eb;border-left:1px solid #e5e7eb;border-right:1px solid transparent;}
+.cat-bar{flex:1;background:linear-gradient(180deg,#2563EB,#1e40af);border-radius:6px 6px 0 0;padding:8px 4px;color:#fff;font-size:11px;text-align:center;display:flex;flex-direction:column;justify-content:flex-end;min-width:40px;transition:all 0.3s ease;}
+.cat-bar:hover{filter:brightness(1.15);transform:translateY(-3px);}
+.cat-bar strong{display:block;font-size:12px;font-weight:bold;margin-bottom:4px;}
+.cat-count{font-size:16px;font-weight:bold;color:#FCD34D;}
+/* TOP5 供应商风险列表 */
+.top5-list{display:flex;flex-direction:column;gap:8px;}
+.top5-item{display:grid;grid-template-columns:28px 1fr 120px;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;transition:all 0.3s;}
+.top5-item:hover{transform:translateX(4px);border-color:#3B82F6;box-shadow:0 2px 8px rgba(59,130,246,0.12);}
+.top5-rank{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:bold;font-size:14px;}
+.top5-info{display:flex;flex-direction:column;gap:2px;}
+.top5-info strong{font-size:13px;color:#1e3a8a;}
+.top5-cat{font-size:11px;color:#64748b;}
+.top5-bar-wrap{position:relative;height:18px;background:#e5e7eb;border-radius:9px;overflow:hidden;}
+.top5-bar{position:absolute;left:0;top:0;height:100%;border-radius:9px;transition:width 0.8s ease;}
+.top5-pct{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:bold;}
+.top5-empty{padding:14px;text-align:center;color:#10B981;background:rgba(16,185,129,0.06);border-radius:8px;border:1px dashed #10B98155;font-size:13px;}
+/* 采购建议 */
+.advice-list{display:flex;flex-direction:column;gap:8px;}
+.advice-item{padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;border-left:3px solid #F59E0B;}
+.advice-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.advice-head strong{font-size:13px;color:#1e3a8a;}
+.advice-qty{font-size:11px;color:#fff;background:#F59E0B;padding:2px 8px;border-radius:10px;font-weight:bold;}
+.advice-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#64748b;}
+.advice-meta span{white-space:nowrap;}
+.cat-rate{font-size:10px;opacity:0.85;margin-top:2px;}
+
+/* 外部信息 */
+.ext-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:1100px){.ext-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.ext-grid{grid-template-columns:1fr;}}
+.ext-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;transition:all 0.3s ease;}
+.ext-card:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.ext-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.ext-name{font-size:13px;color:#64748b;font-weight:600;}
+.ext-chg{font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;}
+.ext-chg.up{color:#dc2626;background:#fee2e2;}
+.ext-chg.down{color:#10B981;background:#d1fae5;}
+.ext-price{margin-bottom:8px;}
+.ext-price strong{font-size:24px;color:#1e3a8a;font-weight:700;}
+.ext-price span{font-size:13px;color:#64748b;margin-left:6px;}
+.ext-meta{font-size:11px;color:#64748b;display:flex;flex-direction:column;gap:2px;}
+
+/* AI能力矩阵 */
+.ai-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:1000px){.ai-matrix{grid-template-columns:1fr 1fr;}}
+.ai-cell{background:linear-gradient(135deg,#f8fafc,#fff);border:1px solid #e5e7eb;border-radius:14px;padding:16px;text-align:center;transition:all 0.3s ease;}
+.ai-cell:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.ai-cell .ic{font-size:30px;}
+.ai-cell strong{display:block;margin-top:8px;font-size:14px;color:#1e3a8a;}
+.ai-cell p{color:#64748b;font-size:11px;margin-top:4px;line-height:1.6;}
+
+/* 通用布局 */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+
+.chat-window{max-height:280px;overflow-y:auto;display:grid;gap:10px;padding:10px;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb;margin-bottom:10px;}
+.bubble{padding:10px 14px;border-radius:12px;font-size:13px;max-width:92%;width:fit-content;background:#fff;border:1px solid #e5e7eb;line-height:1.7;white-space:pre-line;}
+.bubble.ai{background:#EFF6FF;border-color:#bfdbfe;}
+.bubble.user{justify-self:end;background:#1e3a8a;color:#fff;border-color:#1e3a8a;}
+.chat-input{display:grid;grid-template-columns:1fr auto;gap:10px;}
+.chat-input input{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;color:#1f2937;outline:none;font-size:13px;}
+.chat-input input:focus{border-color:#2563EB;}
+
+.sim-flow{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px;}
+@media(max-width:900px){.sim-flow{grid-template-columns:repeat(3,1fr);}}
+.sim-node{padding:14px 10px;border-radius:12px;border:1px solid #e5e7eb;background:#f8fafc;text-align:center;transition:all 0.3s ease;}
+.sim-node:hover{border-color:#93c5fd;background:#EFF6FF;}
+.sim-node span{font-size:12px;color:#64748b;display:block;}
+.sim-node strong{display:block;font-size:24px;margin-top:6px;color:#1e3a8a;}
+
+.sand-input{display:grid;gap:10px;grid-template-columns:1fr auto;align-items:end;}
+.sand-input label{font-size:13px;color:#64748b;grid-column:1/-1;}
+.sand-input input{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;color:#1f2937;outline:none;font-size:13px;}
+
+/* 供应商详情弹窗 */
+.supplier-modal{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.55);backdrop-filter:blur(8px);display:none;place-items:center;}
+.supplier-modal.show{display:flex;}
+.supplier-modal .modal-card{max-width:540px;width:90%;max-height:80vh;overflow-y:auto;background:#fff;border-radius:18px;padding:24px;box-shadow:0 30px 70px rgba(0,0,0,0.25);}
+.sdp-card{padding:10px 14px;border-radius:10px;background:#f8fafc;border:1px solid #f1f5f9;}
+.sdp-card span{font-size:11px;color:#64748b;display:block;}
+.sdp-card strong{display:block;font-size:18px;margin-top:4px;}
+
+/* AI 综合总结（外部+内部） */
+.fusion-summary{background:linear-gradient(135deg,#EFF6FF,#dbeafe);border:1px solid #93c5fd;border-radius:14px;padding:18px 20px;}
+.fusion-summary h3{font-size:16px;color:#1e3a8a;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.fusion-summary .fusion-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+@media(max-width:700px){.fusion-summary .fusion-row{grid-template-columns:1fr;}}
+.fusion-col{background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #bfdbfe;}
+.fusion-col h4{font-size:13px;color:#1e3a8a;margin-bottom:6px;}
+.fusion-col ul{margin:0;padding-left:18px;font-size:12px;color:#475569;line-height:1.8;}
+.fusion-col ul li{margin:2px 0;}
+.fusion-action{margin-top:10px;padding:12px 14px;background:linear-gradient(135deg,#fef9ef,#fffbeb);border:1px solid #fde68a;border-radius:10px;}
+.fusion-action h4{font-size:13px;color:#b9770e;margin-bottom:6px;}
+.fusion-action p{font-size:13px;color:#92400e;line-height:1.8;}
+
+footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-top:1px solid #e5e7eb;margin-top:18px;}
+
+#petBuddy{position:fixed;right:24px;bottom:24px;z-index:9999;width:90px;height:90px;cursor:grab;user-select:none;-webkit-user-select:none;filter:drop-shadow(0 6px 20px rgba(30,58,138,0.4));transition:bottom 0.2s;}
+#petBuddy.dragging{cursor:grabbing;z-index:10000;bottom:24px;}
+#petBuddy svg{width:100%;height:100%;animation:petFloat 3.2s ease-in-out infinite;}
+#petBuddy.dragging svg{animation:none;}
+@keyframes petFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+#petEyes{animation:petBlink 4.5s infinite;transform-origin:center;}
+@keyframes petBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(0.08)}98%{transform:scaleY(1)}}
+#petBuddy .pet-ring{animation:petRing 2.8s ease-out infinite;transform-origin:center;transform-box:fill-box;}
+@keyframes petRing{0%{transform:scale(0.82);opacity:0.7}70%{transform:scale(1.06);opacity:0}100%{transform:scale(1.06);opacity:0}}
+#petPanel{position:fixed;z-index:9998;width:340px;border:1px solid #e5e7eb;border-radius:18px;background:#ffffff;box-shadow:0 20px 60px rgba(0,0,0,0.18);overflow:hidden;display:none;transform-origin:bottom right;}
+#petPanel.show{display:block;animation:petPop 0.25s ease-out;}
+@keyframes petPop{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
+.pet-panel-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f1f5f9;background:linear-gradient(135deg,#1e3a8a,#2563EB);}
+.pet-panel-head .mini-avatar{width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px;color:#1e3a8a;font-weight:bold;}
+.pet-panel-head strong{font-size:14px;color:#fff;}
+.pet-panel-head span{color:rgba(255,255,255,0.8);font-size:11px;margin-left:auto;}
+.pet-panel-head button{color:#fff !important;}
+#petChat{max-height:280px;overflow-y:auto;display:grid;gap:8px;padding:12px;background:#f8fafc;}
+#petChat .bubble{padding:9px 13px;border-radius:12px;font-size:13px;max-width:88%;width:fit-content;background:#fff;border:1px solid #e5e7eb;line-height:1.7;white-space:pre-line;color:#1f2937;}
+#petChat .bubble.ai{border-color:#bfdbfe;background:#EFF6FF;}
+#petChat .bubble.user{justify-self:end;background:#1e3a8a;color:#fff;border-color:#1e3a8a;}
+.pet-input-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border-top:1px solid #f1f5f9;}
+.pet-input-row input{padding:9px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;color:#1f2937;outline:none;font-size:13px;}
+.pet-input-row input:focus{border-color:#2563EB;}
+.btn{padding:10px 18px;border:none;border-radius:12px;background:linear-gradient(135deg,#1e3a8a,#2563EB);color:#fff;font-weight:600;cursor:pointer;font-size:13px;}
+.btn:hover{filter:brightness(1.1);}
+.quick-actions,.pet-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.quick-actions button,.pet-quick button{padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;color:#64748b;font-size:11px;cursor:pointer;}
+.quick-actions button:hover,.pet-quick button:hover{border-color:#2563EB;color:#1e3a8a;}
+
+/* ===== API 设置面板 ===== */
+.api-modal{position:fixed;inset:0;z-index:10001;background:rgba(15,23,42,0.55);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+.api-modal.show{display:flex;}
+.api-modal-card{width:90%;max-width:480px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 30px 70px rgba(0,0,0,0.25);max-height:85vh;overflow-y:auto;}
+.api-modal-card h3{font-size:18px;color:#1e3a8a;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.api-row{margin-bottom:12px;}
+.api-row label{display:block;font-size:12px;color:#64748b;margin-bottom:4px;font-weight:600;}
+.api-row input,.api-row textarea{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#1f2937;outline:none;box-sizing:border-box;}
+.api-row input:focus,.api-row textarea:focus{border-color:#2563EB;}
+.api-row textarea{min-height:70px;resize:vertical;}
+.api-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+.api-actions .btn{font-size:13px;padding:8px 14px;}
+.api-test-msg{padding:8px 10px;border-radius:8px;font-size:12px;margin-top:8px;display:none;}
+.api-test-msg.ok{display:block;background:#d1fae5;color:#065f46;}
+.api-test-msg.err{display:block;background:#fee2e2;color:#991b1b;}
+.pet-status{padding:6px 12px;font-size:11px;color:#64748b;border-top:1px solid #f1f5f9;background:#f8fafc;display:flex;align-items:center;gap:6px;}
+.pet-status .dot{width:6px;height:6px;border-radius:50%;background:#10B981;flex:0 0 auto;}
+
+
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="brand">
+    
+<svg viewBox="0 0 80 80" style="width:54px;height:54px;">
+  <defs>
+    <linearGradient id="botBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/><stop offset="50%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0c1f54"/>
+    </linearGradient>
+    <linearGradient id="botGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCD34D"/><stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <radialGradient id="botVisor" cx="40%" cy="40%" r="60%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#1e3a8a"/></radialGradient>
+    <linearGradient id="botChip" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient>
+  </defs>
+  <!-- 金色底座 -->
+  <ellipse cx="40" cy="72" rx="22" ry="4" fill="url(#botGold)" opacity="0.45"/>
+  <!-- 头部主体（多边形+渐变） -->
+  <polygon points="18,22 62,22 70,38 70,56 62,66 18,66 10,56 10,38" fill="url(#botBody)" stroke="url(#botGold)" stroke-width="1.5"/>
+  <!-- 天线 + 信号圈 -->
+  <line x1="40" y1="22" x2="40" y2="12" stroke="url(#botGold)" stroke-width="2"/>
+  <circle cx="40" cy="10" r="3" fill="#FCD34D">
+    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <!-- 顶部金色边带 -->
+  <rect x="10" y="22" width="60" height="3" fill="url(#botGold)"/>
+  <!-- 黑色面罩（眼睛区） -->
+  <rect x="14" y="28" width="52" height="22" rx="6" fill="url(#botVisor)"/>
+  <!-- 眼睛（左+右高亮） -->
+  <circle cx="27" cy="39" r="4" fill="#fff"><animate attributeName="opacity" values="1;0.3;1" dur="3s" repeatCount="indefinite"/></circle>
+  <circle cx="53" cy="39" r="4" fill="#fff"><animate attributeName="opacity" values="1;0.3;1" dur="3s" begin="1.5s" repeatCount="indefinite"/></circle>
+  <circle cx="27" cy="39" r="2" fill="#06B6D4"/>
+  <circle cx="53" cy="39" r="2" fill="#06B6D4"/>
+  <!-- 嘴巴/指示灯（金色发光） -->
+  <rect x="28" y="55" width="24" height="3" rx="1.5" fill="url(#botGold)"/>
+  <!-- 胸口芯片 -->
+  <rect x="32" y="60" width="16" height="6" rx="1" fill="url(#botChip)"/>
+  <text x="40" y="65" fill="#fff" font-size="6" text-anchor="middle" font-weight="bold">SG</text>
+</svg>
+
+    <div class="brand-text">
+      <h1>AI供应链工作台 <span class="badge">SUPPLY GUARDIAN</span></h1>
+      <div class="sub">功能化学品供应保障与库存健康智能决策平台 · 数据驱动 · AI 赋能</div>
+    </div>
+  </div>
+  <div class="clock">📅 2026-08-07 · 17:11</div>
+  <div class="ai-status">系统正常</div>
+</header>
+
+<!-- AI 日报板块（独立健康分数大卡片 + AI总结） -->
+<section class="card">
+  <div class="card-title"><span>📊 AI 日报 · 管理层摘要</span><span class="tag">2026-08-07</span></div>
+  <!-- ① 供应链健康分数（白色背景、超大凸显） -->
+  <div class="health-hero">
+    <div class="hh-score">
+      <div class="big">79.8<small>分</small></div>
+      <span class="level" style="background:#F59E0B15;color:#F59E0B;border:1px solid #F59E0B55;">关注</span>
+    </div>
+    <div class="hh-right">
+      <div class="hh-bar"><span style="width:79.8%"></span></div>
+      <div class="hh-hint">供应链健康指数 = 100 − (低于安全线物料数 ÷ 总物料数) × 30。<br>高于 80 分健康 / 60-80 分关注 / 低于 60 分风险。</div>
+      <div class="hh-tags">
+        <span class="tag-chip">🔴 紧急 3</span>
+        <span class="tag-chip">🟡 低安全线 62</span>
+        <span class="tag-chip">⚠️ 到货异常 29</span>
+        <span class="tag-chip">🏢 供应商异常 15</span>
+        <span class="tag-chip">📦 监控 120 种物料</span>
+      </div>
+    </div>
+  </div>
+  <!-- ② AI 总结板块（核心指标 + AI文本） -->
+  <div style="border-top:1px dashed #e5e7eb;margin-top:18px;padding-top:16px;">
+    <div class="grid-2">
+      <div class="daily-summary">
+        <h3>📈 核心运行指标</h3>
+        <p>风险：<strong>3 项紧急</strong> | 库存预警：<strong>81 项</strong></p>
+        <p>到货异常：<strong>29 项</strong>（下周到货预期下降&gt;20%）</p>
+        <p>核心采购建议：聚醚原料89补货197.8；阳离子表活原料111补货158.4；增稠剂原料94补货156.0；丙烯酸单体原料43补货136.6；消泡剂原料45补货123.6</p>
+        <p>供应商风险：<strong>15 家</strong>（准时率&lt;95% 需关注）</p>
+        <p>监控规模：<strong>120种物料 / 30家供应商</strong></p>
+      </div>
+      <div class="ai-summary">
+        <h3>🤖 AI 智能总结</h3>
+        <p>今日供应链健康指数 <strong>79.8 分（关注）</strong>，共监控 <strong>120 种物料</strong>，<strong>3 种</strong> 进入紧急补货状态、<strong>81 种</strong> 低于安全线。</p>
+        <p>外部看涨信号（原油高位 + MDI 涨价潮）强化了内部"提前锁价"决策方向，<strong>建议优先处理紧急补货物料</strong>，同时核查 <strong>29 项到货异常</strong> 供应商的交付能力。</p>
+        <p style="margin-top:10px;color:#1e3a8a;font-weight:600;">→ 预计年化价值：¥273.2万（断供避免 + 库存资金释放）</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 关键物料快照 -->
+<section class="card">
+  <div class="card-title"><span>📦 关键物料快照（4个代表性样本）</span><span class="tag">含近30天趋势 · 未来预测</span></div>
+  <div class="rep-grid">
+<div class='rep-card'>
+  <div class='rep-head'><span class='rep-tag' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>紧急</span><strong>非离子表活原料49</strong><span class='rep-code'>MAT049</span></div>
+  <div class='rep-kv'>
+    <div><span>当前库存</span><strong>48 kg</strong></div>
+    <div><span>安全线</span><strong>119.7</strong></div>
+    <div><span>日均消耗</span><strong>15</strong></div>
+    <div><span>理论可用</span><strong>5.5 天</strong></div>
+  </div>
+  <div class='progress'><i style='width:40%;background:linear-gradient(90deg,#EF4444,#EF444499)'></i></div>
+  <div class='spark-title'>近30天库存趋势</div>
+  <svg viewBox='0 0 300 90' style='width:100%;height:auto;'><defs><linearGradient id='gMAT049' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#EF4444' stop-opacity='0.30'/><stop offset='100%' stop-color='#EF4444' stop-opacity='0.02'/></linearGradient></defs><line x1='6.0' y1='8' x2='6.0' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='57.724137931034484' y1='8' x2='57.724137931034484' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='109.44827586206897' y1='8' x2='109.44827586206897' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='161.17241379310346' y1='8' x2='161.17241379310346' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='212.89655172413794' y1='8' x2='212.89655172413794' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='264.62068965517244' y1='8' x2='264.62068965517244' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='6' y1='82' x2='294' y2='82' stroke='rgba(0,0,0,0.12)'/><polygon points='6.0,17.6 16.3,16.0 26.7,18.9 37.0,25.3 47.4,23.9 57.7,28.2 68.1,31.5 78.4,31.0 88.8,31.2 99.1,35.5 109.4,37.8 119.8,38.0 130.1,42.1 140.5,43.1 150.8,42.9 161.2,46.5 171.5,46.0 181.9,48.6 192.2,50.7 202.6,57.1 212.9,53.5 223.2,57.5 233.6,60.6 243.9,60.8 254.3,64.8 264.6,68.1 275.0,67.3 285.3,71.2 295.7,69.7 306.0,76.0 294,82 6,82' fill='url(#gMAT049)'/><polyline points='6.0,17.6 16.3,16.0 26.7,18.9 37.0,25.3 47.4,23.9 57.7,28.2 68.1,31.5 78.4,31.0 88.8,31.2 99.1,35.5 109.4,37.8 119.8,38.0 130.1,42.1 140.5,43.1 150.8,42.9 161.2,46.5 171.5,46.0 181.9,48.6 192.2,50.7 202.6,57.1 212.9,53.5 223.2,57.5 233.6,60.6 243.9,60.8 254.3,64.8 264.6,68.1 275.0,67.3 285.3,71.2 295.7,69.7 306.0,76.0' fill='none' stroke='#EF4444' stroke-width='2.5' stroke-linejoin='round'/><circle cx='6.0' cy='17.6' r='3' fill='#EF4444' opacity='0.85'><title>270.0</title></circle><circle cx='47.4' cy='23.9' r='3' fill='#EF4444' opacity='0.85'><title>246.0</title></circle><circle cx='88.8' cy='31.2' r='3' fill='#EF4444' opacity='0.85'><title>218.2</title></circle><circle cx='130.1' cy='42.1' r='3' fill='#EF4444' opacity='0.85'><title>176.6</title></circle><circle cx='171.5' cy='46.0' r='3' fill='#EF4444' opacity='0.85'><title>161.8</title></circle><circle cx='212.9' cy='53.5' r='3' fill='#EF4444' opacity='0.85'><title>133.6</title></circle><circle cx='254.3' cy='64.8' r='3' fill='#EF4444' opacity='0.85'><title>90.4</title></circle><circle cx='295.7' cy='69.7' r='3' fill='#EF4444' opacity='0.85'><title>72.1</title></circle><circle cx='306.0' cy='76.0' r='3' fill='#EF4444' opacity='0.85'><title>48</title></circle></svg>
+  <div class='rep-forecast'><span>未来7天 <b style='color:#EF4444'>-5</b></span><span>未来30天 <b style='color:#EF4444'>-5</b></span></div>
+  <div class='rep-advice'>立即安排紧急补货，优先保障供应</div>
+</div>
+<div class='rep-card'>
+  <div class='rep-head'><span class='rep-tag' style='background:#F59E0B15;color:#F59E0B;border:1px solid #F59E0B55;'>低安全线</span><strong>溶剂原料80</strong><span class='rep-code'>MAT080</span></div>
+  <div class='rep-kv'>
+    <div><span>当前库存</span><strong>27 kg</strong></div>
+    <div><span>安全线</span><strong>99.2</strong></div>
+    <div><span>日均消耗</span><strong>14.21</strong></div>
+    <div><span>理论可用</span><strong>7.3 天</strong></div>
+  </div>
+  <div class='progress'><i style='width:27%;background:linear-gradient(90deg,#EF4444,#EF444499)'></i></div>
+  <div class='spark-title'>近30天库存趋势</div>
+  <svg viewBox='0 0 300 90' style='width:100%;height:auto;'><defs><linearGradient id='gMAT080' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#EF4444' stop-opacity='0.30'/><stop offset='100%' stop-color='#EF4444' stop-opacity='0.02'/></linearGradient></defs><line x1='6.0' y1='8' x2='6.0' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='57.724137931034484' y1='8' x2='57.724137931034484' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='109.44827586206897' y1='8' x2='109.44827586206897' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='161.17241379310346' y1='8' x2='161.17241379310346' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='212.89655172413794' y1='8' x2='212.89655172413794' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='264.62068965517244' y1='8' x2='264.62068965517244' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='6' y1='82' x2='294' y2='82' stroke='rgba(0,0,0,0.12)'/><polygon points='6.0,16.0 16.3,18.3 26.7,18.9 37.0,16.6 47.4,18.8 57.7,19.1 68.1,22.9 78.4,32.2 88.8,28.3 99.1,36.1 109.4,33.4 119.8,32.3 130.1,31.5 140.5,39.5 150.8,36.4 161.2,39.8 171.5,47.2 181.9,49.6 192.2,54.0 202.6,50.0 212.9,59.2 223.2,50.9 233.6,60.3 243.9,63.6 254.3,65.6 264.6,58.5 275.0,64.3 285.3,71.9 295.7,76.0 306.0,74.0 294,82 6,82' fill='url(#gMAT080)'/><polyline points='6.0,16.0 16.3,18.3 26.7,18.9 37.0,16.6 47.4,18.8 57.7,19.1 68.1,22.9 78.4,32.2 88.8,28.3 99.1,36.1 109.4,33.4 119.8,32.3 130.1,31.5 140.5,39.5 150.8,36.4 161.2,39.8 171.5,47.2 181.9,49.6 192.2,54.0 202.6,50.0 212.9,59.2 223.2,50.9 233.6,60.3 243.9,63.6 254.3,65.6 264.6,58.5 275.0,64.3 285.3,71.9 295.7,76.0 306.0,74.0' fill='none' stroke='#EF4444' stroke-width='2.5' stroke-linejoin='round'/><circle cx='6.0' cy='16.0' r='3' fill='#EF4444' opacity='0.85'><title>128.4</title></circle><circle cx='47.4' cy='18.8' r='3' fill='#EF4444' opacity='0.85'><title>123.5</title></circle><circle cx='88.8' cy='28.3' r='3' fill='#EF4444' opacity='0.85'><title>106.9</title></circle><circle cx='130.1' cy='31.5' r='3' fill='#EF4444' opacity='0.85'><title>101.3</title></circle><circle cx='171.5' cy='47.2' r='3' fill='#EF4444' opacity='0.85'><title>73.9</title></circle><circle cx='212.9' cy='59.2' r='3' fill='#EF4444' opacity='0.85'><title>52.8</title></circle><circle cx='254.3' cy='65.6' r='3' fill='#EF4444' opacity='0.85'><title>41.7</title></circle><circle cx='295.7' cy='76.0' r='3' fill='#EF4444' opacity='0.85'><title>23.5</title></circle><circle cx='306.0' cy='74.0' r='3' fill='#EF4444' opacity='0.85'><title>27</title></circle></svg>
+  <div class='rep-forecast'><span>未来7天 <b style='color:#F59E0B'>4.6</b></span><span>未来30天 <b style='color:#EF4444'>-5</b></span></div>
+  <div class='rep-advice'>提前锁价补货（⚠️下周到货降）</div>
+</div>
+<div class='rep-card'>
+  <div class='rep-head'><span class='rep-tag' style='background:#10B98115;color:#10B981;border:1px solid #10B98155;'>正常</span><strong>溶剂原料56</strong><span class='rep-code'>MAT056</span></div>
+  <div class='rep-kv'>
+    <div><span>当前库存</span><strong>212.3 kg</strong></div>
+    <div><span>安全线</span><strong>166.6</strong></div>
+    <div><span>日均消耗</span><strong>3.34</strong></div>
+    <div><span>理论可用</span><strong>70.6 天</strong></div>
+  </div>
+  <div class='progress'><i style='width:100%;background:linear-gradient(90deg,#10B981,#10B98199)'></i></div>
+  <div class='spark-title'>近30天库存趋势</div>
+  <svg viewBox='0 0 300 90' style='width:100%;height:auto;'><defs><linearGradient id='gMAT056' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#10B981' stop-opacity='0.30'/><stop offset='100%' stop-color='#10B981' stop-opacity='0.02'/></linearGradient></defs><line x1='6.0' y1='8' x2='6.0' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='57.724137931034484' y1='8' x2='57.724137931034484' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='109.44827586206897' y1='8' x2='109.44827586206897' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='161.17241379310346' y1='8' x2='161.17241379310346' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='212.89655172413794' y1='8' x2='212.89655172413794' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='264.62068965517244' y1='8' x2='264.62068965517244' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='6' y1='82' x2='294' y2='82' stroke='rgba(0,0,0,0.12)'/><polygon points='6.0,76.0 16.3,60.2 26.7,72.1 37.0,59.9 47.4,69.7 57.7,53.5 68.1,58.1 78.4,62.3 88.8,52.8 99.1,61.3 109.4,46.9 119.8,42.7 130.1,47.9 140.5,37.4 150.8,52.5 161.2,33.9 171.5,34.6 181.9,46.9 192.2,43.7 202.6,42.7 212.9,25.1 223.2,24.8 233.6,38.8 243.9,20.9 254.3,20.6 264.6,23.4 275.0,20.2 285.3,25.1 295.7,27.2 306.0,16.0 294,82 6,82' fill='url(#gMAT056)'/><polyline points='6.0,76.0 16.3,60.2 26.7,72.1 37.0,59.9 47.4,69.7 57.7,53.5 68.1,58.1 78.4,62.3 88.8,52.8 99.1,61.3 109.4,46.9 119.8,42.7 130.1,47.9 140.5,37.4 150.8,52.5 161.2,33.9 171.5,34.6 181.9,46.9 192.2,43.7 202.6,42.7 212.9,25.1 223.2,24.8 233.6,38.8 243.9,20.9 254.3,20.6 264.6,23.4 275.0,20.2 285.3,25.1 295.7,27.2 306.0,16.0' fill='none' stroke='#10B981' stroke-width='2.5' stroke-linejoin='round'/><circle cx='6.0' cy='76.0' r='3' fill='#10B981' opacity='0.85'><title>195.2</title></circle><circle cx='47.4' cy='69.7' r='3' fill='#10B981' opacity='0.85'><title>197.0</title></circle><circle cx='88.8' cy='52.8' r='3' fill='#10B981' opacity='0.85'><title>201.8</title></circle><circle cx='130.1' cy='47.9' r='3' fill='#10B981' opacity='0.85'><title>203.2</title></circle><circle cx='171.5' cy='34.6' r='3' fill='#10B981' opacity='0.85'><title>207.0</title></circle><circle cx='212.9' cy='25.1' r='3' fill='#10B981' opacity='0.85'><title>209.7</title></circle><circle cx='254.3' cy='20.6' r='3' fill='#10B981' opacity='0.85'><title>211.0</title></circle><circle cx='295.7' cy='27.2' r='3' fill='#10B981' opacity='0.85'><title>209.1</title></circle><circle cx='306.0' cy='16.0' r='3' fill='#10B981' opacity='0.85'><title>212.3</title></circle></svg>
+  <div class='rep-forecast'><span>未来7天 <b style='color:#10B981'>212.4</b></span><span>未来30天 <b style='color:#F59E0B'>159.8</b></span></div>
+  <div class='rep-advice'>维持常规补货节奏</div>
+</div>
+<div class='rep-card'>
+  <div class='rep-head'><span class='rep-tag' style='background:#10B98115;color:#10B981;border:1px solid #10B98155;'>正常</span><strong>防腐剂原料71</strong><span class='rep-code'>MAT071</span></div>
+  <div class='rep-kv'>
+    <div><span>当前库存</span><strong>182.2 kg</strong></div>
+    <div><span>安全线</span><strong>135.1</strong></div>
+    <div><span>日均消耗</span><strong>11.39</strong></div>
+    <div><span>理论可用</span><strong>20.5 天</strong></div>
+  </div>
+  <div class='progress'><i style='width:100%;background:linear-gradient(90deg,#10B981,#10B98199)'></i></div>
+  <div class='spark-title'>近30天库存趋势</div>
+  <svg viewBox='0 0 300 90' style='width:100%;height:auto;'><defs><linearGradient id='gMAT071' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#10B981' stop-opacity='0.30'/><stop offset='100%' stop-color='#10B981' stop-opacity='0.02'/></linearGradient></defs><line x1='6.0' y1='8' x2='6.0' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='57.724137931034484' y1='8' x2='57.724137931034484' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='109.44827586206897' y1='8' x2='109.44827586206897' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='161.17241379310346' y1='8' x2='161.17241379310346' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='212.89655172413794' y1='8' x2='212.89655172413794' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='264.62068965517244' y1='8' x2='264.62068965517244' y2='82' stroke='rgba(37,99,235,0.08)'/><line x1='6' y1='82' x2='294' y2='82' stroke='rgba(0,0,0,0.12)'/><polygon points='6.0,76.0 16.3,58.7 26.7,70.6 37.0,56.4 47.4,57.2 57.7,65.9 68.1,50.7 78.4,52.8 88.8,54.0 99.1,44.3 109.4,49.3 119.8,45.2 130.1,53.8 140.5,42.6 150.8,43.5 161.2,51.0 171.5,41.1 181.9,37.3 192.2,36.0 202.6,33.6 212.9,37.5 223.2,38.2 233.6,30.6 243.9,22.2 254.3,22.4 264.6,28.0 275.0,19.9 285.3,27.8 295.7,24.9 306.0,16.0 294,82 6,82' fill='url(#gMAT071)'/><polyline points='6.0,76.0 16.3,58.7 26.7,70.6 37.0,56.4 47.4,57.2 57.7,65.9 68.1,50.7 78.4,52.8 88.8,54.0 99.1,44.3 109.4,49.3 119.8,45.2 130.1,53.8 140.5,42.6 150.8,43.5 161.2,51.0 171.5,41.1 181.9,37.3 192.2,36.0 202.6,33.6 212.9,37.5 223.2,38.2 233.6,30.6 243.9,22.2 254.3,22.4 264.6,28.0 275.0,19.9 285.3,27.8 295.7,24.9 306.0,16.0' fill='none' stroke='#10B981' stroke-width='2.5' stroke-linejoin='round'/><circle cx='6.0' cy='76.0' r='3' fill='#10B981' opacity='0.85'><title>123.0</title></circle><circle cx='47.4' cy='57.2' r='3' fill='#10B981' opacity='0.85'><title>141.5</title></circle><circle cx='88.8' cy='54.0' r='3' fill='#10B981' opacity='0.85'><title>144.7</title></circle><circle cx='130.1' cy='53.8' r='3' fill='#10B981' opacity='0.85'><title>144.9</title></circle><circle cx='171.5' cy='41.1' r='3' fill='#10B981' opacity='0.85'><title>157.4</title></circle><circle cx='212.9' cy='37.5' r='3' fill='#10B981' opacity='0.85'><title>161.0</title></circle><circle cx='254.3' cy='22.4' r='3' fill='#10B981' opacity='0.85'><title>175.9</title></circle><circle cx='295.7' cy='24.9' r='3' fill='#10B981' opacity='0.85'><title>173.4</title></circle><circle cx='306.0' cy='16.0' r='3' fill='#10B981' opacity='0.85'><title>182.2</title></circle></svg>
+  <div class='rep-forecast'><span>未来7天 <b style='color:#10B981'>153.6</b></span><span>未来30天 <b style='color:#EF4444'>-5</b></span></div>
+  <div class='rep-advice'>维持常规补货节奏（⚠️下周到货降）</div>
+</div></div>
+</section>
+
+<!-- 未来预测 -->
+<section class="card">
+  <div class="card-title"><span>📈 未来7/30天库存预测</span><span class="tag">预测引擎 · 内部数据主导</span></div>
+  <table class="forecast-table">
+    <tr><th>物料</th><th>当前库存</th><th>日均消耗</th><th>本周到货</th><th>下周到货</th><th>未来7天</th><th>未来30天</th><th>预判</th></tr>
+    <tr class='forecast-row'><td><strong>非离子表活原料49</strong></td><td>48</td><td>15</td><td>34.1</td><td>95.9</td><td><span class='fc-num' data-target='-5'>-5</span></td><td><span class='fc-num' data-target='-5'>-5</span></td><td class='fc-warn-cell'>🔴 断供风险</td></tr><tr class='forecast-row'><td><strong>溶剂原料80</strong></td><td>27</td><td>14.21</td><td>77.1</td><td>58</td><td><span class='fc-num' data-target='4.6'>4.6</span></td><td><span class='fc-num' data-target='-5'>-5</span></td><td class='fc-warn-cell'>🟡 低于安全线</td></tr><tr class='forecast-row'><td><strong>溶剂原料56</strong></td><td>212.3</td><td>3.34</td><td>23.5</td><td>24.2</td><td><span class='fc-num' data-target='212.4'>212.4</span></td><td><span class='fc-num' data-target='159.8'>159.8</span></td><td class='fc-warn-cell'>🟡 低于安全线</td></tr><tr class='forecast-row'><td><strong>防腐剂原料71</strong></td><td>182.2</td><td>11.39</td><td>51.1</td><td>23.1</td><td><span class='fc-num' data-target='153.6'>153.6</span></td><td><span class='fc-num' data-target='-5'>-5</span></td><td class='fc-warn-cell'>🟡 低于安全线</td></tr>
+  </table>
+  <div style="font-size:12px;color:#94a3b8;margin-top:10px;">* 预测模型：未来N天库存 = 当前库存 + 已排到货 − 日均消耗×N；结合历史30天趋势校准，识别断供风险点。</div>
+</section>
+
+<!-- 供应商风险地图（3D+丰富内容） -->
+<section class="card">
+  <div class="card-title"><span>🗺 供应商风险地图 · 浙江重点区域 + 全国布局</span><span class="tag">供应商点位 · 区域热力 · 实时风险</span></div>
+  <div class="risk-grid">
+    <div>
+      <svg viewBox=0 0 720 480 style=width:100%;height:auto;border-radius:14px;><text x=360 y=240 fill=#1e3a8a font-size=36 font-weight=800 text-anchor=middle>ZJ MAP</text></svg>
+    </div>
+    <div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:8px;font-weight:600;">⚠️ 供应商风险 TOP 5</div>
+      <div class='top5-list'><div class='top5-item'>
+  <div class='top5-rank' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>1</div>
+  <div class='top5-info'>
+    <strong>模拟供应商1</strong>
+    <span class='top5-cat'>非离子表活 · 华东</span>
+  </div>
+  <div class='top5-bar-wrap'>
+    <div class='top5-bar' style='width:90%;background:linear-gradient(90deg,#EF4444,#EF444499);'></div>
+    <span class='top5-pct' style='color:#EF4444;'>90%</span>
+  </div>
+</div><div class='top5-item'>
+  <div class='top5-rank' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>2</div>
+  <div class='top5-info'>
+    <strong>模拟供应商7</strong>
+    <span class='top5-cat'>丙烯酸单体 · 华东</span>
+  </div>
+  <div class='top5-bar-wrap'>
+    <div class='top5-bar' style='width:90%;background:linear-gradient(90deg,#EF4444,#EF444499);'></div>
+    <span class='top5-pct' style='color:#EF4444;'>90%</span>
+  </div>
+</div><div class='top5-item'>
+  <div class='top5-rank' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>3</div>
+  <div class='top5-info'>
+    <strong>模拟供应商17</strong>
+    <span class='top5-cat'>聚醚 · 华南</span>
+  </div>
+  <div class='top5-bar-wrap'>
+    <div class='top5-bar' style='width:90%;background:linear-gradient(90deg,#EF4444,#EF444499);'></div>
+    <span class='top5-pct' style='color:#EF4444;'>90%</span>
+  </div>
+</div><div class='top5-item'>
+  <div class='top5-rank' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>4</div>
+  <div class='top5-info'>
+    <strong>模拟供应商23</strong>
+    <span class='top5-cat'>防腐剂 · 华南</span>
+  </div>
+  <div class='top5-bar-wrap'>
+    <div class='top5-bar' style='width:90%;background:linear-gradient(90deg,#EF4444,#EF444499);'></div>
+    <span class='top5-pct' style='color:#EF4444;'>90%</span>
+  </div>
+</div><div class='top5-item'>
+  <div class='top5-rank' style='background:#EF444415;color:#EF4444;border:1px solid #EF444455;'>5</div>
+  <div class='top5-info'>
+    <strong>模拟供应商13</strong>
+    <span class='top5-cat'>非离子表活 · 华东</span>
+  </div>
+  <div class='top5-bar-wrap'>
+    <div class='top5-bar' style='width:91%;background:linear-gradient(90deg,#EF4444,#EF444499);'></div>
+    <span class='top5-pct' style='color:#EF4444;'>91%</span>
+  </div>
+</div></div>
+      <div style="font-size:13px;color:#64748b;margin:18px 0 8px;font-weight:600;">📋 今日采购建议</div>
+      <div class='advice-list'><div class='advice-item' style='background:rgba(239,68,68,0.06);'>
+  <div class='advice-head'><strong>聚醚原料89</strong><span class='advice-qty'>补货 197.8</span></div>
+  <div class='advice-meta'><span>🔴 库存 55.5/220.3</span><span>📅 理论可用 14.1天</span><span>🏢 模拟供应商5</span></div>
+</div><div class='advice-item' style='background:rgba(239,68,68,0.06);'>
+  <div class='advice-head'><strong>阳离子表活原料111</strong><span class='advice-qty'>补货 158.4</span></div>
+  <div class='advice-meta'><span>🔴 库存 65.5/197.5</span><span>📅 理论可用 14.3天</span><span>🏢 模拟供应商15</span></div>
+</div><div class='advice-item' style='background:rgba(239,68,68,0.06);'>
+  <div class='advice-head'><strong>增稠剂原料94</strong><span class='advice-qty'>补货 156.0</span></div>
+  <div class='advice-meta'><span>🔴 库存 54.5/184.5</span><span>📅 理论可用 11.7天</span><span>🏢 模拟供应商22</span></div>
+</div><div class='advice-item' style='background:rgba(239,68,68,0.06);'>
+  <div class='advice-head'><strong>丙烯酸单体原料43</strong><span class='advice-qty'>补货 136.6</span></div>
+  <div class='advice-meta'><span>🔴 库存 74.9/188.7</span><span>📅 理论可用 17.7天</span><span>🏢 模拟供应商19</span></div>
+</div><div class='advice-item' style='background:rgba(239,68,68,0.06);'>
+  <div class='advice-head'><strong>消泡剂原料45</strong><span class='advice-qty'>补货 123.6</span></div>
+  <div class='advice-meta'><span>🔴 库存 53.6/156.6</span><span>📅 理论可用 8.3天</span><span>🏢 模拟供应商21</span></div>
+</div></div>
+      <div style="font-size:13px;color:#64748b;margin:18px 0 8px;font-weight:600;">📊 多维区域统计</div>
+      
+<table class="region-table">
+  <thead><tr><th>区域</th><th>供应商数</th><th>平均准时率</th><th>高风险</th><th>中风险</th><th>低风险</th><th>累计订单</th></tr></thead>
+  <tbody><tr><td><strong>华东区</strong></td><td>10</td><td>93.8%</td><td><span style='color:#EF4444;font-weight:bold;'>4</span></td><td><span style='color:#F59E0B;font-weight:bold;'>1</span></td><td><span style='color:#10B981;font-weight:bold;'>5</span></td><td>3654</td></tr><tr><td><strong>华南区</strong></td><td>10</td><td>93.7%</td><td><span style='color:#EF4444;font-weight:bold;'>3</span></td><td><span style='color:#F59E0B;font-weight:bold;'>3</span></td><td><span style='color:#10B981;font-weight:bold;'>4</span></td><td>3346</td></tr><tr><td><strong>华北区</strong></td><td>10</td><td>95.3%</td><td><span style='color:#EF4444;font-weight:bold;'>1</span></td><td><span style='color:#F59E0B;font-weight:bold;'>3</span></td><td><span style='color:#10B981;font-weight:bold;'>6</span></td><td>3433</td></tr></tbody>
+</table>
+      <div style="font-size:13px;color:#64748b;margin:18px 0 8px;font-weight:600;">🏭 品类产能分布</div>
+      <div class='cat-bars'><div class='cat-bar' style='height:48px;'><strong>非离子表活</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 91.7%</div></div><div class='cat-bar' style='height:48px;'><strong>聚醚</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 93.0%</div></div><div class='cat-bar' style='height:48px;'><strong>两性表活</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 95.3%</div></div><div class='cat-bar' style='height:48px;'><strong>阴离子表活</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 93.7%</div></div><div class='cat-bar' style='height:48px;'><strong>阳离子表活</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 94.3%</div></div><div class='cat-bar' style='height:48px;'><strong>有机硅</strong><div class='cat-count'>3家</div><div class='cat-rate'>准时率 97.3%</div></div><div class='cat-bar' style='height:42px;'><strong>丙烯酸单体</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 93.0%</div></div><div class='cat-bar' style='height:42px;'><strong>防腐剂</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 93.0%</div></div><div class='cat-bar' style='height:42px;'><strong>消泡剂</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 92.0%</div></div><div class='cat-bar' style='height:42px;'><strong>溶剂</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 95.5%</div></div><div class='cat-bar' style='height:42px;'><strong>增稠剂</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 95.5%</div></div><div class='cat-bar' style='height:42px;'><strong>功能添加剂</strong><div class='cat-count'>2家</div><div class='cat-rate'>准时率 97.0%</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 供应商画像（4家+切换） -->
+<section class="card">
+  <div class="card-title">
+    <span>🏢 供应商画像 · Top 4</span>
+    <div class="profile-switch">
+      <button class="active" onclick="switchProfileGroup(1)">第1组</button>
+      <button onclick="switchProfileGroup(2)">第2组</button>
+      <button onclick="switchProfileGroup(3)">查看全部 →</button>
+    </div>
+  </div>
+  <div class="profile-group" id="profile-group-1">
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商1')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商1</strong><span class="profile-region">华东 · 非离子表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">83.7</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期7.4天</strong></div>
+    <div><span>🏭 品类产能</span><strong>紧张 · 非离子表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>6年 · 201单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>41小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:88.9%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 88.9%</span><span>关联3物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商7')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商7</strong><span class="profile-region">华东 · 丙烯酸单体</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">86.1</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期5.6天</strong></div>
+    <div><span>🏭 品类产能</span><strong>满产 · 丙烯酸单体</strong></div>
+    <div><span>🤝 合作深度</span><strong>7年 · 292单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>33小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.4%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.4%</span><span>关联4物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商17')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商17</strong><span class="profile-region">华南 · 聚醚</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">80.1</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期6.9天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 聚醚</strong></div>
+    <div><span>🤝 合作深度</span><strong>4年 · 340单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>23小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.3%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.3%</span><span>关联2物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商23')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商23</strong><span class="profile-region">华南 · 防腐剂</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">90.0</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期10.7天</strong></div>
+    <div><span>🏭 品类产能</span><strong>正常 · 防腐剂</strong></div>
+    <div><span>🤝 合作深度</span><strong>9年 · 389单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>33小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:89.9%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 89.9%</span><span>关联3物料</span></div>
+</div></div>
+  <div class="profile-group" id="profile-group-2" style="display:none;">
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商13')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商13</strong><span class="profile-region">华东 · 非离子表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">89.3</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期9.0天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 非离子表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>8年 · 273单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>44小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:92.7%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 92.7%</span><span>关联3物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商21')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商21</strong><span class="profile-region">华北 · 消泡剂</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">87.0</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期7.7天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 消泡剂</strong></div>
+    <div><span>🤝 合作深度</span><strong>7年 · 500单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>12小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:91.7%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 91.7%</span><span>关联4物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商28')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商28</strong><span class="profile-region">华东 · 两性表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">88.3</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期7.5天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 两性表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>8年 · 360单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>23小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:89.3%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 89.3%</span><span>关联2物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商29')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商29</strong><span class="profile-region">华南 · 聚醚</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">92.5</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期6.0天</strong></div>
+    <div><span>🏭 品类产能</span><strong>正常 · 聚醚</strong></div>
+    <div><span>🤝 合作深度</span><strong>12年 · 228单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>17小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.0%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.0%</span><span>关联5物料</span></div>
+</div></div>
+  <div class="profile-group" id="profile-group-3" style="display:none;">
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商1')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商1</strong><span class="profile-region">华东 · 非离子表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">83.7</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期7.4天</strong></div>
+    <div><span>🏭 品类产能</span><strong>紧张 · 非离子表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>6年 · 201单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>41小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:88.9%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 88.9%</span><span>关联3物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商7')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商7</strong><span class="profile-region">华东 · 丙烯酸单体</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">86.1</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期5.6天</strong></div>
+    <div><span>🏭 品类产能</span><strong>满产 · 丙烯酸单体</strong></div>
+    <div><span>🤝 合作深度</span><strong>7年 · 292单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>33小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.4%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.4%</span><span>关联4物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商17')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商17</strong><span class="profile-region">华南 · 聚醚</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">80.1</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期6.9天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 聚醚</strong></div>
+    <div><span>🤝 合作深度</span><strong>4年 · 340单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>23小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.3%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.3%</span><span>关联2物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商23')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商23</strong><span class="profile-region">华南 · 防腐剂</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">90.0</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率90% · 延期10.7天</strong></div>
+    <div><span>🏭 品类产能</span><strong>正常 · 防腐剂</strong></div>
+    <div><span>🤝 合作深度</span><strong>9年 · 389单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>33小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:89.9%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 89.9%</span><span>关联3物料</span></div>
+</div><div class="profile-group-sep">👇 备选组（点击"换一批"切换）</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商13')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商13</strong><span class="profile-region">华东 · 非离子表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">89.3</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期9.0天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 非离子表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>8年 · 273单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>44小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:92.7%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 92.7%</span><span>关联3物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商21')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商21</strong><span class="profile-region">华北 · 消泡剂</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">87.0</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期7.7天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 消泡剂</strong></div>
+    <div><span>🤝 合作深度</span><strong>7年 · 500单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>12小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:91.7%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 91.7%</span><span>关联4物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商28')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商28</strong><span class="profile-region">华东 · 两性表活</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">88.3</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期7.5天</strong></div>
+    <div><span>🏭 品类产能</span><strong>弹性 · 两性表活</strong></div>
+    <div><span>🤝 合作深度</span><strong>8年 · 360单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>23小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:89.3%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 89.3%</span><span>关联2物料</span></div>
+</div>
+<div class="profile-card profile-card-lg" onclick="showSupplierDetail('模拟供应商29')">
+  <div class="profile-head">
+    <div class="profile-name"><strong>模拟供应商29</strong><span class="profile-region">华南 · 聚醚</span></div>
+    <span class="profile-risk" style="background:#EF444415;color:#EF4444;border:1px solid #EF444455;">高风险</span>
+  </div>
+  <div class="profile-score">
+    <div><strong style="color:#EF4444">92.5</strong><span style="font-size:11px;color:#6b7280;">健康分</span></div>
+    <div class="profile-stars" style="color:#F59E0B;font-size:14px;">★★★★★</div>
+  </div>
+  <div class="profile-kv">
+    <div><span>🎯 履约能力</span><strong>准时率91% · 延期6.0天</strong></div>
+    <div><span>🏭 品类产能</span><strong>正常 · 聚醚</strong></div>
+    <div><span>🤝 合作深度</span><strong>12年 · 228单</strong></div>
+    <div><span>⚡ 响应速度</span><strong>17小时内</strong></div>
+  </div>
+  <div class="profile-bar"><span style="width:90.0%;background:linear-gradient(90deg,#EF4444,#EF444499)"></span></div>
+  <div class="profile-foot"><span>质量合格率 90.0%</span><span>关联5物料</span></div>
+</div></div>
+  <div style="font-size:12px;color:#94a3b8;margin-top:12px;">💡 提示：按时准率降序排列 · 点击卡片查看详情 · 切换"第2组"查看备选供应商 · "查看全部"展示 8 家重点供应商</div>
+</section>
+
+<!-- AI Copilot + 沙盘 -->
+<section class="grid-2">
+  <div class="card" style="display:grid;grid-template-rows:auto 1fr auto;">
+    <div class="card-title"><span>🤖 AI Copilot · 智能问答</span><span class="tag">自然语言交互</span></div>
+    <div class="chat-window" id="chatWindow">
+      <div class="bubble ai">👋 你好！我是供应链 AI 助手。可以问我：<br>· 非离子表活原料49的库存和预警？<br>· 帮我生成采购建议<br>· 未来7天哪些物料会断供？<br>· 模拟供应商3的交付情况？</div>
+    </div>
+    <div>
+      <div class="quick-actions">
+        <button onclick="askQuestion('未来7天哪些物料断供风险最高？')">🔴 断供风险</button>
+        <button onclick="askQuestion('帮我生成采购建议')">📋 采购建议</button>
+        <button onclick="askQuestion('库存健康指数是多少？')">📈 健康指数</button>
+      </div>
+      <form class="chat-input" onsubmit="handleChat(event)">
+        <input id="chatInput" placeholder="输入问题..." value="非离子表活原料49的库存和预警？">
+        <button class="btn" type="submit">发送</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🧪 AI 沙盘推演</span><span class="tag">供应链韧性模拟</span></div>
+    <div class="sand-input">
+      <label>模拟事件：某供应商停产，推演对物料/产品/订单的影响</label>
+      <input id="simInput" value="模拟供应商1停产15天">
+      <button class="btn" onclick="runSim()">开始模拟</button>
+    </div>
+    <div class="sim-flow">
+      <div class="sim-node"><span>影响物料</span><strong id="simMat">-</strong></div>
+      <div class="sim-node"><span>影响产品</span><strong id="simProd">-</strong></div>
+      <div class="sim-node"><span>紧急物料</span><strong id="simRed">-</strong></div>
+      <div class="sim-node"><span>预计断供</span><strong id="simCut">-</strong></div>
+      <div class="sim-node"><span>推荐备选</span><strong id="simSup">-</strong></div>
+      <div class="sim-node"><span>风险降低</span><strong id="simReduce">-</strong></div>
+    </div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:10px;" id="simStatus">输入供应商名称（如"模拟供应商1"）后点击开始模拟</div>
+  </div>
+</section>
+
+<!-- 外部信息（下方，丰富+综合 AI 总结） -->
+<section class="card">
+  <div class="card-title"><span>🌐 外部行情 · 国际市场</span><span class="tag">参考信息 · 权重30%</span></div>
+  <div class="ext-grid">
+<div class="ext-card">
+  <div class="ext-hd"><span class="ext-name">布伦特原油</span><span class="ext-chg up">+2.00%</span></div>
+  <div class="ext-price"><strong>84.17</strong><span>USD/桶</span></div>
+  <div class="ext-meta"><span>📈 高位震荡</span><span style="color:#6b7280;">霍尔木兹封锁+ EIA 去库支撑</span></div>
+</div>
+<div class="ext-card">
+  <div class="ext-hd"><span class="ext-name">WTI 原油</span><span class="ext-chg up">+0.98%</span></div>
+  <div class="ext-price"><strong>78.05</strong><span>USD/桶</span></div>
+  <div class="ext-meta"><span>📈 高位偏强</span><span style="color:#6b7280;">美伊谈判预期升温，波动加大</span></div>
+</div>
+<div class="ext-card">
+  <div class="ext-hd"><span class="ext-name">BMD 棕榈油</span><span class="ext-chg up">+1.37%</span></div>
+  <div class="ext-price"><strong>4,692</strong><span>令吉/吨</span></div>
+  <div class="ext-meta"><span>📈 区间偏强</span><span style="color:#6b7280;">产弱销旺托底</span></div>
+</div>
+<div class="ext-card">
+  <div class="ext-hd"><span class="ext-name">大商所棕榈</span><span class="ext-chg up">+0.35%</span></div>
+  <div class="ext-price"><strong>9,385</strong><span>元/吨</span></div>
+  <div class="ext-meta"><span>📈 近弱远强</span><span style="color:#6b7280;">高库存压制+豆油替代</span></div>
+</div></div>
+  <div style="font-size:12px;color:#64748b;margin-top:12px;">📰 宏观研判：霍尔木兹封锁支撑原油短期偏强；MDI/TDI全球涨价潮；VOCs环保税2027年试点；棕榈油"近弱远强"。外部因素仅作决策修正，内部库存数据主导判断。</div>
+</section>
+
+<section class="card">
+  <div class="card-title"><span>🤖 AI 综合决策（内部70% + 外部30%）</span><span class="tag">内外融合 · 智能建议</span></div>
+  <div class="fusion-summary">
+    <h3>🎯 AI 综合决策建议</h3>
+    <div class="fusion-row">
+      <div class="fusion-col">
+        <h4>📊 内部经营信号</h4>
+        <ul>
+          <li>健康指数 <strong>79.8 分</strong>（关注级）</li>
+          <li>3 种物料进入紧急补货状态</li>
+          <li>81 种物料低于安全线</li>
+          <li>29 项到货预期下降&gt;20%</li>
+          <li>15 家供应商准时率&lt;95%</li>
+        </ul>
+      </div>
+      <div class="fusion-col">
+        <h4>🌐 外部市场信号</h4>
+        <ul>
+          <li>布伦特原油 84.17 美元（▲+2.00%）</li>
+          <li>WTI 原油 78.05 美元（▲+0.98%）</li>
+          <li>BMD 棕榈油 4,692 令吉（▲+1.37%）</li>
+          <li>大商所棕榈 9,385 元（▲+0.35%）</li>
+          <li>MDI/TDI 全球涨价潮（万华+200美元/吨）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="fusion-action">
+      <h4>🎯 内外融合建议</h4>
+      <p>外部原油/化工品价格普涨（布油创高、MDI提价），叠加国内化工品价差走阔（涤纶长丝近五年同期最高），原料成本传导压力上升。<strong>建议优先安排 3 种紧急物料补货（非离子表活原料49 等）</strong>，同时对 62 种低安全线物料<strong>提前锁价</strong>；针对 29 项到货异常供应商，<strong>立即核查交付能力并启动备选机制</strong>。综合判断：本周采购<strong>重点关注成本管控而非追求低价</strong>，对未来 30 天内的化工原料采购建议采取"分批锁价 + 锁定长约"的稳健策略。</p>
+    </div>
+  </div>
+</section>
+
+<footer>AI 供应链工作台 · Supply Guardian · 数字化转型 AI 应用参赛作品 · 2026-08-07</footer>
+</div>
+
+<div id="petBuddy" title="点我聊天，拖我到任意位置">
+  <svg viewBox="0 0 110 110">
+    <defs>
+      <linearGradient id="petGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1a1a2e"/>
+        <stop offset="50%" stop-color="#16213e"/>
+        <stop offset="100%" stop-color="#0f0f1a"/>
+      </linearGradient>
+      <linearGradient id="petGold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FDE047"/>
+        <stop offset="100%" stop-color="#CA8A04"/>
+      </linearGradient>
+      <linearGradient id="petCyan" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#67e8f9"/>
+        <stop offset="100%" stop-color="#06b6d4"/>
+      </linearGradient>
+      <radialGradient id="petCore" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+        <stop offset="60%" stop-color="#0891b2" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#0e7490" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="petGlow">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <!-- 光环 -->
+    <circle class="pet-ring" cx="55" cy="55" r="46" fill="none" stroke="rgba(34,211,238,0.55)" stroke-width="1.5" filter="url(#petGlow)">
+      <animate attributeName="r" values="46;50;46" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.55;0.2;0.55" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle class="pet-ring" cx="55" cy="55" r="38" fill="none" stroke="rgba(34,211,238,0.3)" stroke-width="1">
+      <animate attributeName="r" values="38;42;38" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <!-- 天线 -->
+    <line x1="55" y1="14" x2="55" y2="2" stroke="url(#petGold)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="55" cy="2" r="4" fill="#FDE047" filter="url(#petGlow)">
+      <animate attributeName="r" values="4;5.5;4" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <!-- 机甲头盔主体 -->
+    <polygon points="55,16 78,28 85,58 80,82 55,92 30,82 25,58 32,28" fill="url(#petGrad)" stroke="url(#petGold)" stroke-width="1.8"/>
+    <!-- 额头装甲条纹 -->
+    <rect x="38" y="24" width="34" height="4" rx="2" fill="url(#petGold)" opacity="0.7"/>
+    <rect x="42" y="20" width="26" height="2" rx="1" fill="url(#petCyan)" opacity="0.5"/>
+    <!-- 护目镜区域 -->
+    <rect x="28" y="38" width="54" height="22" rx="8" fill="#0a1628" stroke="url(#petCyan)" stroke-width="1.5"/>
+    <!-- 左右眼睛（LED发光） -->
+    <g id="petEyes">
+      <ellipse cx="42" cy="50" rx="9" ry="10" fill="url(#petCyan)" filter="url(#petGlow)">
+        <animate attributeName="opacity" values="1;0.3;1" dur="3.5s" repeatCount="indefinite"/>
+      </ellipse>
+      <ellipse cx="68" cy="50" rx="9" ry="10" fill="url(#petCyan)" filter="url(#petGlow)">
+        <animate attributeName="opacity" values="1;0.3;1" dur="3.5s" begin="0.3s" repeatCount="indefinite"/>
+      </ellipse>
+    </g>
+    <!-- 眉心能量晶核 -->
+    <circle cx="55" cy="49" r="2.5" fill="#FDE047" filter="url(#petGlow)">
+      <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <!-- 嘴部呼吸灯 -->
+    <rect id="petMouth" x="44" y="65" width="22" height="3" rx="1.5" fill="url(#petCyan)" opacity="0.7">
+      <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    <!-- 胸口能量核心 -->
+    <circle cx="55" cy="80" r="10" fill="url(#petCore)"/>
+    <circle cx="55" cy="80" r="4" fill="#22d3ee" filter="url(#petGlow)">
+      <animate attributeName="r" values="3.5;5;3.5" dur="1.2s" repeatCount="indefinite"/>
+    </circle>
+    <!-- 两侧肩甲 -->
+    <path d="M 22 55 L 18 70 L 12 65 Z" fill="url(#petGold)" opacity="0.5"/>
+    <path d="M 88 55 L 92 70 L 98 65 Z" fill="url(#petGold)" opacity="0.5"/>
+    <!-- 粒子尾迹 -->
+    <circle cx="40" cy="95" r="1.5" fill="#22d3ee" opacity="0.6">
+      <animate attributeName="cy" values="95;105;95" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="55" cy="95" r="1.5" fill="#FDE047" opacity="0.6">
+      <animate attributeName="cy" values="95;108;95" dur="2s" begin="0.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" begin="0.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="70" cy="95" r="1.5" fill="#22d3ee" opacity="0.6">
+      <animate attributeName="cy" values="95;103;95" dur="2s" begin="0.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" begin="0.8s" repeatCount="indefinite"/>
+    </circle>
+  </svg>
+</div>
+
+<div id="petPanel">
+  <div class="pet-panel-head">
+    <div class="mini-avatar">🤖</div>
+    <strong>Supply 顾问</strong>
+    <span>AI在线</span>
+    <button id="petVoiceBtn" onclick="togglePetVoice()" title="语音播报开关" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:999px;color:#fff;font-size:11px;cursor:pointer;padding:3px 10px;margin-left:6px;">🔊 语音</button>
+    <button onclick="openApiSettings()" title="接入外部AI API" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:999px;color:#fff;font-size:11px;cursor:pointer;padding:3px 10px;margin-left:4px;">⚙ API</button>
+    <button onclick="togglePetPanel()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;margin-left:4px;">✕</button>
+  </div>
+  <div id="petChat">
+    <div class="bubble ai">👋 你好！我是 Supply 顾问 🤖<br>拖着我放到任何位置，随时点我聊天～<br>试试问我："帮我生成采购建议"</div>
+  </div>
+  <div class="pet-quick">
+    <button onclick="petAsk('帮我生成采购建议')">📋 采购建议</button>
+    <button onclick="petAsk('未来7天哪些物料断供风险最高？')">🔴 断供风险</button>
+    <button onclick="petAsk('库存健康指数是多少？')">📈 健康指数</button>
+    <button onclick="petAsk('供应商3的交付情况？')">🏢 供应商</button>
+  </div>
+  <form class="pet-input-row" onsubmit="petHandle(event)">
+    <input id="petInput" placeholder="问点什么..." autocomplete="off">
+    <button class="btn" type="submit" style="padding:8px 16px;">发送</button>
+  </form>
+  <div class="pet-status"><span class="dot"></span><span id="apiStatusText">本地问答模式（⚙ 可接入外部 AI）</span></div>
+</div>
+
+<!-- API 设置面板 -->
+<div class="api-modal" id="apiModal" onclick="if(event.target===this)closeApiSettings()">
+  <div class="api-modal-card">
+    <h3>⚙ AI API 设置</h3>
+    <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">接入外部大模型（OpenAI 兼容协议）。配置仅保存在浏览器本地，不会上传服务器。</p>
+    <div class="api-row">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
+    </div>
+    <div class="api-row">
+      <label>API Base URL</label>
+      <input type="text" id="apiBase" placeholder="https://api.openai.com/v1">
+    </div>
+    <div class="api-row">
+      <label>模型名称</label>
+      <input type="text" id="apiModel" placeholder="gpt-3.5-turbo / deepseek-chat / 其他">
+    </div>
+    <div class="api-row">
+      <label>系统提示词</label>
+      <textarea id="apiSystem">你是 Supply 顾问，化工供应链 AI 助手。基于用户提供的物料/供应商数据给出专业、简洁的中文回答。</textarea>
+    </div>
+    <div id="apiTestMsg" class="api-test-msg"></div>
+    <div class="api-actions">
+      <button class="btn" style="background:#fff;color:#1f2937;border:1px solid #e5e7eb;" onclick="closeApiSettings()">取消</button>
+      <button class="btn" style="background:#94a3b8;" onclick="clearApiSettings()">清除</button>
+      <button class="btn" style="background:#0ea5e9;" onclick="testApi()">测试连接</button>
+      <button class="btn" onclick="saveApiSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 供应商详情弹窗 -->
+<div class="supplier-modal" id="supplierModal" onclick="if(event.target===this)closeSupplierDetail()">
+  <div class="modal-card" id="supplierModalBody"></div>
+</div>
+
+<script>
+const MATERIALS = [{"code": "MAT049", "name": "非离子表活原料49", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 48, "safety": 119.7, "theoDays": 5.5, "status": "🔴", "daily": 15, "weekArrival": 34.1, "nextArrival": 95.9, "lastArrival": 119.4, "supplier": "模拟供应商25", "f7": -5, "f30": -5}, {"code": "MAT091", "name": "丙烯酸单体原料91", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 24.1, "safety": 91.4, "theoDays": 5.9, "status": "🔴", "daily": 10.95, "weekArrival": 40.3, "nextArrival": 75.5, "lastArrival": 42.2, "supplier": "模拟供应商7", "f7": -5, "f30": -5}, {"code": "MAT019", "name": "丙烯酸单体原料19", "category": "丙烯酸单体", "unit": "kg", "level": "A", "stock": 16, "safety": 41.6, "theoDays": 6.3, "status": "🔴", "daily": 8, "weekArrival": 34.5, "nextArrival": 22.6, "lastArrival": 28.7, "supplier": "模拟供应商7", "f7": -5, "f30": -5}, {"code": "MAT080", "name": "溶剂原料80", "category": "溶剂", "unit": "kg", "level": "B", "stock": 27, "safety": 99.2, "theoDays": 7.3, "status": "🟡", "daily": 14.21, "weekArrival": 77.1, "nextArrival": 58, "lastArrival": 81.2, "supplier": "模拟供应商20", "f7": 4.6, "f30": -5}, {"code": "MAT052", "name": "两性表活原料52", "category": "两性表活", "unit": "kg", "level": "B", "stock": 44.9, "safety": 122.1, "theoDays": 7.6, "status": "🟡", "daily": 12.47, "weekArrival": 50.2, "nextArrival": 32, "lastArrival": 71.5, "supplier": "模拟供应商28", "f7": 7.8, "f30": -5}, {"code": "MAT018", "name": "有机硅原料18", "category": "有机硅", "unit": "kg", "level": "A", "stock": 50.2, "safety": 55.6, "theoDays": 7.7, "status": "🟡", "daily": 10.91, "weekArrival": 34.1, "nextArrival": 39.9, "lastArrival": 79.5, "supplier": "模拟供应商6", "f7": 7.9, "f30": -5}, {"code": "MAT114", "name": "有机硅原料114", "category": "有机硅", "unit": "kg", "level": "B", "stock": 24.2, "safety": 95.6, "theoDays": 8.0, "status": "🟡", "daily": 6.72, "weekArrival": 29.3, "nextArrival": 19.3, "lastArrival": 32.7, "supplier": "模拟供应商30", "f7": 6.5, "f30": -5}, {"code": "MAT012", "name": "功能添加剂原料12", "category": "功能添加剂", "unit": "kg", "level": "A", "stock": 65.5, "safety": 103.4, "theoDays": 8.1, "status": "🟡", "daily": 13.1, "weekArrival": 40.7, "nextArrival": 86.8, "lastArrival": 37.4, "supplier": "模拟供应商12", "f7": 14.5, "f30": -5}, {"code": "MAT030", "name": "有机硅原料30", "category": "有机硅", "unit": "kg", "level": "A", "stock": 32.7, "safety": 76.4, "theoDays": 8.1, "status": "🟡", "daily": 6.96, "weekArrival": 23.6, "nextArrival": 32.4, "lastArrival": 44.9, "supplier": "模拟供应商6", "f7": 7.6, "f30": -5}, {"code": "MAT078", "name": "有机硅原料78", "category": "有机硅", "unit": "kg", "level": "B", "stock": 58.4, "safety": 82.6, "theoDays": 8.1, "status": "🟡", "daily": 9.73, "weekArrival": 20.2, "nextArrival": 43.1, "lastArrival": 70.7, "supplier": "模拟供应商6", "f7": 10.5, "f30": -5}, {"code": "MAT045", "name": "消泡剂原料45", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 53.6, "safety": 156.6, "theoDays": 8.3, "status": "🟡", "daily": 12.47, "weekArrival": 50.1, "nextArrival": 73.1, "lastArrival": 93.2, "supplier": "模拟供应商21", "f7": 16.4, "f30": -5}, {"code": "MAT066", "name": "有机硅原料66", "category": "有机硅", "unit": "kg", "level": "B", "stock": 60.2, "safety": 85.5, "theoDays": 8.4, "status": "🟡", "daily": 12.81, "weekArrival": 47.5, "nextArrival": 85.8, "lastArrival": 52.5, "supplier": "模拟供应商18", "f7": 18.0, "f30": -5}, {"code": "MAT005", "name": "聚醚原料5", "category": "聚醚", "unit": "kg", "level": "A", "stock": 36.9, "safety": 39.2, "theoDays": 8.7, "status": "🟡", "daily": 14.76, "weekArrival": 92, "nextArrival": 107.3, "lastArrival": 32.7, "supplier": "模拟供应商29", "f7": 25.6, "f30": -5}, {"code": "MAT047", "name": "防腐剂原料47", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 34.8, "safety": 88.1, "theoDays": 8.7, "status": "🟡", "daily": 13.38, "weekArrival": 81.6, "nextArrival": 44.2, "lastArrival": 48.6, "supplier": "模拟供应商23", "f7": 22.7, "f30": -5}, {"code": "MAT100", "name": "两性表活原料100", "category": "两性表活", "unit": "kg", "level": "B", "stock": 77.3, "safety": 92.2, "theoDays": 8.8, "status": "🟡", "daily": 12.47, "weekArrival": 32.6, "nextArrival": 86, "lastArrival": 38.3, "supplier": "模拟供应商4", "f7": 22.6, "f30": -5}, {"code": "MAT120", "name": "功能添加剂原料120", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 101.8, "safety": 166.6, "theoDays": 9.4, "status": "🟡", "daily": 14.34, "weekArrival": 32.9, "nextArrival": 99.5, "lastArrival": 67.2, "supplier": "模拟供应商12", "f7": 34.3, "f30": -5}, {"code": "MAT082", "name": "增稠剂原料82", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 86.9, "safety": 75.9, "theoDays": 9.5, "status": "🟡", "daily": 13.79, "weekArrival": 44.7, "nextArrival": 88.6, "lastArrival": 58.3, "supplier": "模拟供应商10", "f7": 35.1, "f30": -5}, {"code": "MAT004", "name": "两性表活原料4", "category": "两性表活", "unit": "kg", "level": "A", "stock": 51.5, "safety": 63.6, "theoDays": 9.7, "status": "🟡", "daily": 12.88, "weekArrival": 73.6, "nextArrival": 97.9, "lastArrival": 53.7, "supplier": "模拟供应商16", "f7": 34.9, "f30": -5}, {"code": "MAT038", "name": "阴离子表活原料38", "category": "阴离子表活", "unit": "kg", "level": "A", "stock": 54.8, "safety": 47.2, "theoDays": 9.7, "status": "🟡", "daily": 8.7, "weekArrival": 29.2, "nextArrival": 55, "lastArrival": 49.2, "supplier": "模拟供应商26", "f7": 23.1, "f30": -5}, {"code": "MAT062", "name": "阴离子表活原料62", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 27.1, "safety": 81.9, "theoDays": 9.7, "status": "🟡", "daily": 11.29, "weekArrival": 82.5, "nextArrival": 40.3, "lastArrival": 33.6, "supplier": "模拟供应商26", "f7": 30.6, "f30": -5}, {"code": "MAT081", "name": "消泡剂原料81", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 53.3, "safety": 72.3, "theoDays": 9.7, "status": "🟡", "daily": 12.69, "weekArrival": 69.9, "nextArrival": 56.5, "lastArrival": 60.6, "supplier": "模拟供应商9", "f7": 34.4, "f30": -5}, {"code": "MAT112", "name": "两性表活原料112", "category": "两性表活", "unit": "kg", "level": "B", "stock": 82.6, "safety": 94.2, "theoDays": 9.7, "status": "🟡", "daily": 11.47, "weekArrival": 28.2, "nextArrival": 83.4, "lastArrival": 58, "supplier": "模拟供应商4", "f7": 30.5, "f30": -5}, {"code": "MAT009", "name": "消泡剂原料9", "category": "消泡剂", "unit": "kg", "level": "A", "stock": 38.8, "safety": 52.7, "theoDays": 9.8, "status": "🟡", "daily": 6.16, "weekArrival": 21.4, "nextArrival": 36.8, "lastArrival": 43.3, "supplier": "模拟供应商9", "f7": 17.1, "f30": -5}, {"code": "MAT095", "name": "防腐剂原料95", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 84.5, "safety": 172.2, "theoDays": 9.8, "status": "🟡", "daily": 12.43, "weekArrival": 37.3, "nextArrival": 84.6, "lastArrival": 67.3, "supplier": "模拟供应商11", "f7": 34.8, "f30": -5}, {"code": "MAT076", "name": "两性表活原料76", "category": "两性表活", "unit": "kg", "level": "B", "stock": 56.1, "safety": 52.4, "theoDays": 9.9, "status": "🟡", "daily": 10.02, "weekArrival": 43.2, "nextArrival": 55, "lastArrival": 47.6, "supplier": "模拟供应商4", "f7": 29.2, "f30": -5}, {"code": "MAT117", "name": "消泡剂原料117", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 18.7, "safety": 72.1, "theoDays": 9.9, "status": "🟡", "daily": 5.34, "weekArrival": 34.3, "nextArrival": 40.7, "lastArrival": 21.9, "supplier": "模拟供应商21", "f7": 15.6, "f30": -5}, {"code": "MAT013", "name": "非离子表活原料13", "category": "非离子表活", "unit": "kg", "level": "A", "stock": 52.7, "safety": 67.7, "theoDays": 10.0, "status": "🟡", "daily": 11.98, "weekArrival": 67.1, "nextArrival": 78.1, "lastArrival": 26, "supplier": "模拟供应商25", "f7": 35.9, "f30": -5}, {"code": "MAT118", "name": "增稠剂原料118", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 86, "safety": 76.2, "theoDays": 10.1, "status": "🟡", "daily": 13.44, "weekArrival": 50.1, "nextArrival": 59.6, "lastArrival": 83.9, "supplier": "模拟供应商22", "f7": 42.0, "f30": -5}, {"code": "MAT044", "name": "溶剂原料44", "category": "溶剂", "unit": "kg", "level": "B", "stock": 67.3, "safety": 155.4, "theoDays": 10.2, "status": "🟡", "daily": 14.96, "weekArrival": 85.7, "nextArrival": 60.2, "lastArrival": 42.2, "supplier": "模拟供应商20", "f7": 48.3, "f30": -5}, {"code": "MAT072", "name": "功能添加剂原料72", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 52.8, "safety": 107.2, "theoDays": 10.3, "status": "🟡", "daily": 8.66, "weekArrival": 36, "nextArrival": 64.2, "lastArrival": 29.3, "supplier": "模拟供应商12", "f7": 28.2, "f30": -5}, {"code": "MAT008", "name": "溶剂原料8", "category": "溶剂", "unit": "kg", "level": "A", "stock": 79.6, "safety": 60.8, "theoDays": 10.5, "status": "🟡", "daily": 12.63, "weekArrival": 52.8, "nextArrival": 80.5, "lastArrival": 95.5, "supplier": "模拟供应商20", "f7": 44.0, "f30": -5}, {"code": "MAT036", "name": "功能添加剂原料36", "category": "功能添加剂", "unit": "kg", "level": "A", "stock": 36.1, "safety": 57.3, "theoDays": 10.7, "status": "🟡", "daily": 8.4, "weekArrival": 53.9, "nextArrival": 40, "lastArrival": 64.2, "supplier": "模拟供应商12", "f7": 31.2, "f30": -5}, {"code": "MAT113", "name": "聚醚原料113", "category": "聚醚", "unit": "kg", "level": "B", "stock": 32.2, "safety": 105.7, "theoDays": 10.7, "status": "🟡", "daily": 4.67, "weekArrival": 17.7, "nextArrival": 22.3, "lastArrival": 25.2, "supplier": "模拟供应商29", "f7": 17.2, "f30": -5}, {"code": "MAT021", "name": "消泡剂原料21", "category": "消泡剂", "unit": "kg", "level": "A", "stock": 43.9, "safety": 66.5, "theoDays": 10.8, "status": "🟡", "daily": 4.99, "weekArrival": 10, "nextArrival": 30.2, "lastArrival": 20.8, "supplier": "模拟供应商21", "f7": 19.0, "f30": -5}, {"code": "MAT067", "name": "丙烯酸单体原料67", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 52.1, "safety": 62.5, "theoDays": 10.8, "status": "🟡", "daily": 9.47, "weekArrival": 50.6, "nextArrival": 37.9, "lastArrival": 64.7, "supplier": "模拟供应商19", "f7": 36.4, "f30": -5}, {"code": "MAT017", "name": "聚醚原料17", "category": "聚醚", "unit": "kg", "level": "A", "stock": 70.6, "safety": 88.7, "theoDays": 11.1, "status": "🟡", "daily": 7.84, "weekArrival": 16.4, "nextArrival": 56, "lastArrival": 35.9, "supplier": "模拟供应商17", "f7": 32.1, "f30": -5}, {"code": "MAT040", "name": "两性表活原料40", "category": "两性表活", "unit": "kg", "level": "A", "stock": 113.7, "safety": 90.8, "theoDays": 11.3, "status": "🟡", "daily": 14.21, "weekArrival": 46.7, "nextArrival": 34.7, "lastArrival": 98.9, "supplier": "模拟供应商4", "f7": 60.9, "f30": -5}, {"code": "MAT039", "name": "阳离子表活原料39", "category": "阳离子表活", "unit": "kg", "level": "A", "stock": 78, "safety": 64.1, "theoDays": 11.4, "status": "🟡", "daily": 11.82, "weekArrival": 56.8, "nextArrival": 75.9, "lastArrival": 44.5, "supplier": "模拟供应商15", "f7": 52.1, "f30": -5}, {"code": "MAT110", "name": "阴离子表活原料110", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 91, "safety": 105.9, "theoDays": 11.4, "status": "🟡", "daily": 14, "weekArrival": 69.2, "nextArrival": 51.3, "lastArrival": 101.8, "supplier": "模拟供应商14", "f7": 62.2, "f30": -5}, {"code": "MAT029", "name": "聚醚原料29", "category": "聚醚", "unit": "kg", "level": "A", "stock": 57.2, "safety": 70, "theoDays": 11.5, "status": "🟡", "daily": 12.71, "weekArrival": 88.5, "nextArrival": 97, "lastArrival": 37.7, "supplier": "模拟供应商5", "f7": 56.7, "f30": -5}, {"code": "MAT046", "name": "增稠剂原料46", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 90.8, "safety": 131.5, "theoDays": 11.7, "status": "🟡", "daily": 11.35, "weekArrival": 41.9, "nextArrival": 62.1, "lastArrival": 55.6, "supplier": "模拟供应商10", "f7": 53.2, "f30": -5}, {"code": "MAT094", "name": "增稠剂原料94", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 54.5, "safety": 184.5, "theoDays": 11.7, "status": "🟡", "daily": 12.98, "weekArrival": 97.2, "nextArrival": 83.5, "lastArrival": 64.4, "supplier": "模拟供应商22", "f7": 60.8, "f30": -5}, {"code": "MAT053", "name": "聚醚原料53", "category": "聚醚", "unit": "kg", "level": "B", "stock": 46.4, "safety": 135.8, "theoDays": 11.8, "status": "🟡", "daily": 10.31, "weekArrival": 75.3, "nextArrival": 69.3, "lastArrival": 66.5, "supplier": "模拟供应商5", "f7": 49.5, "f30": -5}, {"code": "MAT115", "name": "丙烯酸单体原料115", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 60.3, "safety": 127.7, "theoDays": 11.8, "status": "🟡", "daily": 8.04, "weekArrival": 34.5, "nextArrival": 37.1, "lastArrival": 53.7, "supplier": "模拟供应商19", "f7": 38.5, "f30": -5}, {"code": "MAT010", "name": "增稠剂原料10", "category": "增稠剂", "unit": "kg", "level": "A", "stock": 54.4, "safety": 81.1, "theoDays": 11.9, "status": "🟡", "daily": 10.07, "weekArrival": 65, "nextArrival": 61, "lastArrival": 25.8, "supplier": "模拟供应商22", "f7": 48.9, "f30": -5}, {"code": "MAT050", "name": "阴离子表活原料50", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 52.4, "safety": 65.7, "theoDays": 11.9, "status": "🟡", "daily": 10.48, "weekArrival": 71.9, "nextArrival": 59.2, "lastArrival": 63.4, "supplier": "模拟供应商2", "f7": 50.9, "f30": -5}, {"code": "MAT079", "name": "丙烯酸单体原料79", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 65.4, "safety": 126.4, "theoDays": 11.9, "status": "🟡", "daily": 9.62, "weekArrival": 48.9, "nextArrival": 49.9, "lastArrival": 30.6, "supplier": "模拟供应商19", "f7": 47.0, "f30": -5}, {"code": "MAT048", "name": "功能添加剂原料48", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 85.8, "safety": 88.8, "theoDays": 12.1, "status": "🟡", "daily": 12.43, "weekArrival": 65.2, "nextArrival": 31.9, "lastArrival": 35.1, "supplier": "模拟供应商12", "f7": 64.0, "f30": -5}, {"code": "MAT074", "name": "阴离子表活原料74", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 61.4, "safety": 66.4, "theoDays": 12.4, "status": "🟡", "daily": 12.53, "weekArrival": 94.3, "nextArrival": 41.5, "lastArrival": 52, "supplier": "模拟供应商14", "f7": 68.0, "f30": -5}, {"code": "MAT037", "name": "非离子表活原料37", "category": "非离子表活", "unit": "kg", "level": "A", "stock": 71.2, "safety": 70.2, "theoDays": 12.5, "status": "🟡", "daily": 6.98, "weekArrival": 16, "nextArrival": 40.3, "lastArrival": 34.9, "supplier": "模拟供应商13", "f7": 38.3, "f30": -5}, {"code": "MAT057", "name": "消泡剂原料57", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 103.8, "safety": 85.1, "theoDays": 12.5, "status": "🟡", "daily": 11.66, "weekArrival": 42.3, "nextArrival": 49.6, "lastArrival": 52.3, "supplier": "模拟供应商9", "f7": 64.5, "f30": -5}, {"code": "MAT116", "name": "溶剂原料116", "category": "溶剂", "unit": "kg", "level": "B", "stock": 73.9, "safety": 93.4, "theoDays": 12.7, "status": "🟡", "daily": 13.44, "weekArrival": 96.4, "nextArrival": 33, "lastArrival": 29.3, "supplier": "模拟供应商20", "f7": 76.2, "f30": -5}, {"code": "MAT087", "name": "阳离子表活原料87", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 77.3, "safety": 92.1, "theoDays": 13.2, "status": "🟡", "daily": 8.49, "weekArrival": 34.8, "nextArrival": 56.1, "lastArrival": 18.1, "supplier": "模拟供应商3", "f7": 52.7, "f30": -5}, {"code": "MAT015", "name": "阳离子表活原料15", "category": "阳离子表活", "unit": "kg", "level": "A", "stock": 91.3, "safety": 109.2, "theoDays": 13.5, "status": "🟡", "daily": 13.04, "weekArrival": 84.5, "nextArrival": 56.7, "lastArrival": 68, "supplier": "模拟供应商27", "f7": 84.5, "f30": -5}, {"code": "MAT042", "name": "有机硅原料42", "category": "有机硅", "unit": "kg", "level": "B", "stock": 91.2, "safety": 143.5, "theoDays": 13.6, "status": "🟡", "daily": 8.22, "weekArrival": 20.9, "nextArrival": 61.4, "lastArrival": 34.9, "supplier": "模拟供应商18", "f7": 54.6, "f30": -5}, {"code": "MAT006", "name": "有机硅原料6", "category": "有机硅", "unit": "kg", "level": "A", "stock": 72.7, "safety": 55.9, "theoDays": 13.7, "status": "🟡", "daily": 6.43, "weekArrival": 15.4, "nextArrival": 16.7, "lastArrival": 36.9, "supplier": "模拟供应商30", "f7": 43.1, "f30": -5}, {"code": "MAT007", "name": "丙烯酸单体原料7", "category": "丙烯酸单体", "unit": "kg", "level": "A", "stock": 67.4, "safety": 56.7, "theoDays": 13.7, "status": "🟡", "daily": 10.87, "weekArrival": 81.8, "nextArrival": 77.4, "lastArrival": 78.7, "supplier": "模拟供应商7", "f7": 73.1, "f30": -5}, {"code": "MAT055", "name": "丙烯酸单体原料55", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 139.8, "safety": 115.7, "theoDays": 13.7, "status": "🟡", "daily": 13.07, "weekArrival": 38.7, "nextArrival": 55, "lastArrival": 75.3, "supplier": "模拟供应商19", "f7": 87.0, "f30": -5}, {"code": "MAT089", "name": "聚醚原料89", "category": "聚醚", "unit": "kg", "level": "B", "stock": 55.5, "safety": 220.3, "theoDays": 14.1, "status": "🟡", "daily": 8.54, "weekArrival": 65.1, "nextArrival": 57.9, "lastArrival": 27.4, "supplier": "模拟供应商5", "f7": 60.8, "f30": -5}, {"code": "MAT119", "name": "防腐剂原料119", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 78.5, "safety": 63.5, "theoDays": 14.1, "status": "🟡", "daily": 8.72, "weekArrival": 44.6, "nextArrival": 53.1, "lastArrival": 48.1, "supplier": "模拟供应商11", "f7": 62.1, "f30": -5}, {"code": "MAT014", "name": "阴离子表活原料14", "category": "阴离子表活", "unit": "kg", "level": "A", "stock": 41.8, "safety": 45.2, "theoDays": 14.2, "status": "🟡", "daily": 6.33, "weekArrival": 48.3, "nextArrival": 39.1, "lastArrival": 23, "supplier": "模拟供应商2", "f7": 45.8, "f30": -5}, {"code": "MAT059", "name": "防腐剂原料59", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 48, "safety": 73.3, "theoDays": 14.2, "status": "🟡", "daily": 6.67, "weekArrival": 46.5, "nextArrival": 52.3, "lastArrival": 45.5, "supplier": "模拟供应商11", "f7": 47.8, "f30": -5}, {"code": "MAT097", "name": "非离子表活原料97", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 95.6, "safety": 116.6, "theoDays": 14.3, "status": "🟡", "daily": 8.17, "weekArrival": 21.6, "nextArrival": 57.4, "lastArrival": 62.9, "supplier": "模拟供应商1", "f7": 60.0, "f30": -5}, {"code": "MAT111", "name": "阳离子表活原料111", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 65.5, "safety": 197.5, "theoDays": 14.3, "status": "🟡", "daily": 10.4, "weekArrival": 83, "nextArrival": 80, "lastArrival": 64.3, "supplier": "模拟供应商15", "f7": 75.7, "f30": -5}, {"code": "MAT109", "name": "非离子表活原料109", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 116, "safety": 178.5, "theoDays": 14.9, "status": "🟡", "daily": 13.98, "weekArrival": 92.4, "nextArrival": 104.5, "lastArrival": 38.4, "supplier": "模拟供应商25", "f7": 110.5, "f30": -5}, {"code": "MAT026", "name": "阴离子表活原料26", "category": "阴离子表活", "unit": "kg", "level": "A", "stock": 71, "safety": 62.4, "theoDays": 15.4, "status": "🟢", "daily": 8.16, "weekArrival": 54.5, "nextArrival": 43.3, "lastArrival": 20.3, "supplier": "模拟供应商26", "f7": 68.4, "f30": -5}, {"code": "MAT034", "name": "增稠剂原料34", "category": "增稠剂", "unit": "kg", "level": "A", "stock": 45, "safety": 59.4, "theoDays": 15.4, "status": "🟢", "daily": 4.13, "weekArrival": 18.6, "nextArrival": 14.7, "lastArrival": 17.7, "supplier": "模拟供应商22", "f7": 34.7, "f30": -5}, {"code": "MAT063", "name": "阳离子表活原料63", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 61.8, "safety": 124.5, "theoDays": 15.4, "status": "🟢", "daily": 8.03, "weekArrival": 61.6, "nextArrival": 43.1, "lastArrival": 38.1, "supplier": "模拟供应商3", "f7": 67.2, "f30": -5}, {"code": "MAT105", "name": "消泡剂原料105", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 101, "safety": 149, "theoDays": 15.4, "status": "🟢", "daily": 8.42, "weekArrival": 29, "nextArrival": 24.4, "lastArrival": 20.5, "supplier": "模拟供应商9", "f7": 71.1, "f30": -5}, {"code": "MAT031", "name": "丙烯酸单体原料31", "category": "丙烯酸单体", "unit": "kg", "level": "A", "stock": 138.4, "safety": 104.4, "theoDays": 15.5, "status": "🟢", "daily": 11.63, "weekArrival": 42, "nextArrival": 27.4, "lastArrival": 25, "supplier": "模拟供应商7", "f7": 99.0, "f30": -5}, {"code": "MAT025", "name": "非离子表活原料25", "category": "非离子表活", "unit": "kg", "level": "A", "stock": 115.4, "safety": 111.6, "theoDays": 16.1, "status": "🟢", "daily": 13.42, "weekArrival": 100, "nextArrival": 106.8, "lastArrival": 59.4, "supplier": "模拟供应商13", "f7": 121.5, "f30": -5}, {"code": "MAT028", "name": "两性表活原料28", "category": "两性表活", "unit": "kg", "level": "A", "stock": 62.1, "safety": 80.3, "theoDays": 16.2, "status": "🟢", "daily": 6.09, "weekArrival": 36.8, "nextArrival": 45.9, "lastArrival": 45.2, "supplier": "模拟供应商4", "f7": 56.3, "f30": -5}, {"code": "MAT041", "name": "聚醚原料41", "category": "聚醚", "unit": "kg", "level": "B", "stock": 44, "safety": 111.9, "theoDays": 16.2, "status": "🟢", "daily": 3.46, "weekArrival": 12.2, "nextArrival": 13.5, "lastArrival": 8.7, "supplier": "模拟供应商29", "f7": 32.0, "f30": -5}, {"code": "MAT096", "name": "功能添加剂原料96", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 45.3, "safety": 124.9, "theoDays": 16.3, "status": "🟢", "daily": 5.21, "weekArrival": 39.6, "nextArrival": 32.9, "lastArrival": 10.9, "supplier": "模拟供应商12", "f7": 48.4, "f30": -5}, {"code": "MAT102", "name": "有机硅原料102", "category": "有机硅", "unit": "kg", "level": "B", "stock": 119.9, "safety": 166.1, "theoDays": 16.3, "status": "🟢", "daily": 11.21, "weekArrival": 63.1, "nextArrival": 23.5, "lastArrival": 42.7, "supplier": "模拟供应商30", "f7": 104.5, "f30": -5}, {"code": "MAT077", "name": "聚醚原料77", "category": "聚醚", "unit": "kg", "level": "B", "stock": 63.3, "safety": 80, "theoDays": 16.5, "status": "🟢", "daily": 6.09, "weekArrival": 36.9, "nextArrival": 41.8, "lastArrival": 33.1, "supplier": "模拟供应商29", "f7": 57.6, "f30": -5}, {"code": "MAT070", "name": "增稠剂原料70", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 50, "safety": 145.8, "theoDays": 16.6, "status": "🟢", "daily": 5.21, "weekArrival": 36.5, "nextArrival": 25, "lastArrival": 22.7, "supplier": "模拟供应商10", "f7": 50.0, "f30": -5}, {"code": "MAT106", "name": "增稠剂原料106", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 111.6, "safety": 96.5, "theoDays": 16.6, "status": "🟢", "daily": 8.39, "weekArrival": 27.6, "nextArrival": 49.4, "lastArrival": 43.9, "supplier": "模拟供应商10", "f7": 80.5, "f30": -5}, {"code": "MAT092", "name": "溶剂原料92", "category": "溶剂", "unit": "kg", "level": "B", "stock": 123.4, "safety": 165.2, "theoDays": 16.7, "status": "🟢", "daily": 10.92, "weekArrival": 58.6, "nextArrival": 72, "lastArrival": 70.8, "supplier": "模拟供应商20", "f7": 105.6, "f30": -5}, {"code": "MAT043", "name": "丙烯酸单体原料43", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 74.9, "safety": 188.7, "theoDays": 17.7, "status": "🟢", "daily": 5.99, "weekArrival": 31.4, "nextArrival": 18.4, "lastArrival": 27.9, "supplier": "模拟供应商19", "f7": 64.4, "f30": -5}, {"code": "MAT107", "name": "防腐剂原料107", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 49.1, "safety": 136.3, "theoDays": 17.9, "status": "🟢", "daily": 4.35, "weekArrival": 28.8, "nextArrival": 12.7, "lastArrival": 13.9, "supplier": "模拟供应商23", "f7": 47.5, "f30": -5}, {"code": "MAT011", "name": "防腐剂原料11", "category": "防腐剂", "unit": "kg", "level": "A", "stock": 80.9, "safety": 80.5, "theoDays": 18.0, "status": "🟢", "daily": 6.32, "weekArrival": 33.1, "nextArrival": 21.9, "lastArrival": 14.9, "supplier": "模拟供应商11", "f7": 69.8, "f30": -5}, {"code": "MAT027", "name": "阳离子表活原料27", "category": "阳离子表活", "unit": "kg", "level": "A", "stock": 168.2, "safety": 129.9, "theoDays": 18.3, "status": "🟢", "daily": 13.35, "weekArrival": 76.7, "nextArrival": 59.5, "lastArrival": 55.8, "supplier": "模拟供应商15", "f7": 151.4, "f30": -5}, {"code": "MAT022", "name": "增稠剂原料22", "category": "增稠剂", "unit": "kg", "level": "A", "stock": 62.9, "safety": 88.5, "theoDays": 18.7, "status": "🟢", "daily": 4.4, "weekArrival": 19.4, "nextArrival": 21.7, "lastArrival": 11.6, "supplier": "模拟供应商22", "f7": 51.5, "f30": -5}, {"code": "MAT101", "name": "聚醚原料101", "category": "聚醚", "unit": "kg", "level": "B", "stock": 78.1, "safety": 91.6, "theoDays": 18.8, "status": "🟢", "daily": 6.05, "weekArrival": 35.6, "nextArrival": 20.3, "lastArrival": 38.8, "supplier": "模拟供应商17", "f7": 71.3, "f30": -5}, {"code": "MAT098", "name": "阴离子表活原料98", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 121, "safety": 145.9, "theoDays": 18.9, "status": "🟢", "daily": 10, "weekArrival": 68, "nextArrival": 62.9, "lastArrival": 62.3, "supplier": "模拟供应商26", "f7": 119, "f30": -5}, {"code": "MAT024", "name": "功能添加剂原料24", "category": "功能添加剂", "unit": "kg", "level": "A", "stock": 76.3, "safety": 77.6, "theoDays": 19.2, "status": "🟢", "daily": 6.69, "weekArrival": 52, "nextArrival": 49.6, "lastArrival": 20, "supplier": "模拟供应商12", "f7": 81.5, "f30": -5}, {"code": "MAT099", "name": "阳离子表活原料99", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 180.8, "safety": 153.7, "theoDays": 19.8, "status": "🟢", "daily": 10.7, "weekArrival": 31.3, "nextArrival": 35, "lastArrival": 52, "supplier": "模拟供应商27", "f7": 137.2, "f30": -5}, {"code": "MAT065", "name": "聚醚原料65", "category": "聚醚", "unit": "kg", "level": "B", "stock": 68.9, "safety": 98.3, "theoDays": 19.9, "status": "🟢", "daily": 4.31, "weekArrival": 17, "nextArrival": 27.6, "lastArrival": 22.4, "supplier": "模拟供应商29", "f7": 55.7, "f30": -5}, {"code": "MAT085", "name": "非离子表活原料85", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 77.2, "safety": 106.6, "theoDays": 19.9, "status": "🟢", "daily": 6.33, "weekArrival": 48.9, "nextArrival": 25.5, "lastArrival": 14.3, "supplier": "模拟供应商1", "f7": 81.8, "f30": -5}, {"code": "MAT032", "name": "溶剂原料32", "category": "溶剂", "unit": "kg", "level": "A", "stock": 73.5, "safety": 83.7, "theoDays": 20.2, "status": "🟢", "daily": 5.7, "weekArrival": 41.9, "nextArrival": 36.2, "lastArrival": 42.4, "supplier": "模拟供应商8", "f7": 75.5, "f30": -5}, {"code": "MAT060", "name": "功能添加剂原料60", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 139.9, "safety": 104.9, "theoDays": 20.2, "status": "🟢", "daily": 9.39, "weekArrival": 49.6, "nextArrival": 51.6, "lastArrival": 43.1, "supplier": "模拟供应商12", "f7": 123.8, "f30": -5}, {"code": "MAT069", "name": "消泡剂原料69", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 162.4, "safety": 158.3, "theoDays": 20.4, "status": "🟢", "daily": 9.72, "weekArrival": 35.6, "nextArrival": 76.1, "lastArrival": 25.4, "supplier": "模拟供应商9", "f7": 130.0, "f30": -5}, {"code": "MAT023", "name": "防腐剂原料23", "category": "防腐剂", "unit": "kg", "level": "A", "stock": 104.8, "safety": 95.8, "theoDays": 20.5, "status": "🟢", "daily": 7.23, "weekArrival": 43.6, "nextArrival": 52.8, "lastArrival": 15.8, "supplier": "模拟供应商11", "f7": 97.8, "f30": -5}, {"code": "MAT071", "name": "防腐剂原料71", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 182.2, "safety": 135.1, "theoDays": 20.5, "status": "🟢", "daily": 11.39, "weekArrival": 51.1, "nextArrival": 23.1, "lastArrival": 66.7, "supplier": "模拟供应商11", "f7": 153.6, "f30": -5}, {"code": "MAT054", "name": "有机硅原料54", "category": "有机硅", "unit": "kg", "level": "B", "stock": 90.5, "safety": 67.3, "theoDays": 21.5, "status": "🟢", "daily": 6.28, "weekArrival": 44.3, "nextArrival": 36.8, "lastArrival": 14, "supplier": "模拟供应商6", "f7": 90.8, "f30": -5}, {"code": "MAT003", "name": "阳离子表活原料3", "category": "阳离子表活", "unit": "kg", "level": "A", "stock": 87.7, "safety": 66.8, "theoDays": 22.2, "status": "🟢", "daily": 4.79, "weekArrival": 18.4, "nextArrival": 21.5, "lastArrival": 17.8, "supplier": "模拟供应商15", "f7": 72.6, "f30": -5}, {"code": "MAT073", "name": "非离子表活原料73", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 73.9, "safety": 60.1, "theoDays": 22.3, "status": "🟢", "daily": 3.81, "weekArrival": 11.2, "nextArrival": 8.2, "lastArrival": 23.5, "supplier": "模拟供应商1", "f7": 58.4, "f30": -5}, {"code": "MAT090", "name": "有机硅原料90", "category": "有机硅", "unit": "kg", "level": "B", "stock": 136.2, "safety": 139.2, "theoDays": 22.6, "status": "🟢", "daily": 7.74, "weekArrival": 38.7, "nextArrival": 43.7, "lastArrival": 55.3, "supplier": "模拟供应商18", "f7": 120.7, "f30": -5}, {"code": "MAT103", "name": "丙烯酸单体原料103", "category": "丙烯酸单体", "unit": "kg", "level": "B", "stock": 69.2, "safety": 65.9, "theoDays": 22.6, "status": "🟢", "daily": 3.87, "weekArrival": 18.3, "nextArrival": 21.8, "lastArrival": 27.9, "supplier": "模拟供应商19", "f7": 60.4, "f30": -5}, {"code": "MAT016", "name": "两性表活原料16", "category": "两性表活", "unit": "kg", "level": "A", "stock": 72.7, "safety": 98.5, "theoDays": 22.9, "status": "🟢", "daily": 3.69, "weekArrival": 11.8, "nextArrival": 23.7, "lastArrival": 17.2, "supplier": "模拟供应商28", "f7": 58.7, "f30": -2.5}, {"code": "MAT002", "name": "阴离子表活原料2", "category": "阴离子表活", "unit": "kg", "level": "A", "stock": 58, "safety": 75.6, "theoDays": 23.4, "status": "🟢", "daily": 3.19, "weekArrival": 16.5, "nextArrival": 25.1, "lastArrival": 6.9, "supplier": "模拟供应商26", "f7": 52.2, "f30": 3.9}, {"code": "MAT058", "name": "增稠剂原料58", "category": "增稠剂", "unit": "kg", "level": "B", "stock": 136, "safety": 120.1, "theoDays": 23.6, "status": "🟢", "daily": 7.05, "weekArrival": 30.3, "nextArrival": 44.6, "lastArrival": 20.1, "supplier": "模拟供应商10", "f7": 117.0, "f30": -0.6}, {"code": "MAT104", "name": "溶剂原料104", "category": "溶剂", "unit": "kg", "level": "B", "stock": 112.8, "safety": 118.7, "theoDays": 23.6, "status": "🟢", "daily": 6.56, "weekArrival": 42.3, "nextArrival": 50.5, "lastArrival": 13.7, "supplier": "模拟供应商8", "f7": 109.2, "f30": 8.8}, {"code": "MAT035", "name": "防腐剂原料35", "category": "防腐剂", "unit": "kg", "level": "A", "stock": 56.5, "safety": 78.2, "theoDays": 24.2, "status": "🟢", "daily": 3.23, "weekArrival": 21.7, "nextArrival": 16.2, "lastArrival": 20.4, "supplier": "模拟供应商11", "f7": 55.6, "f30": -2.5}, {"code": "MAT061", "name": "非离子表活原料61", "category": "非离子表活", "unit": "kg", "level": "B", "stock": 106.4, "safety": 108.2, "theoDays": 24.4, "status": "🟢", "daily": 5.43, "weekArrival": 26.1, "nextArrival": 30.4, "lastArrival": 24.1, "supplier": "模拟供应商25", "f7": 94.5, "f30": 0.0}, {"code": "MAT075", "name": "阳离子表活原料75", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 81.8, "safety": 113.6, "theoDays": 25.0, "status": "🟢", "daily": 4.31, "weekArrival": 26, "nextArrival": 12.5, "lastArrival": 13.5, "supplier": "模拟供应商3", "f7": 77.6, "f30": -5}, {"code": "MAT051", "name": "阳离子表活原料51", "category": "阳离子表活", "unit": "kg", "level": "B", "stock": 88, "safety": 84.6, "theoDays": 26.2, "status": "🟢", "daily": 4.84, "weekArrival": 38.7, "nextArrival": 26.4, "lastArrival": 36.2, "supplier": "模拟供应商3", "f7": 92.8, "f30": 7.9}, {"code": "MAT084", "name": "功能添加剂原料84", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 135.5, "safety": 150.4, "theoDays": 26.5, "status": "🟢", "daily": 5.77, "weekArrival": 17.5, "nextArrival": 37.9, "lastArrival": 20.8, "supplier": "模拟供应商24", "f7": 112.6, "f30": 17.8}, {"code": "MAT020", "name": "溶剂原料20", "category": "溶剂", "unit": "kg", "level": "A", "stock": 76.5, "safety": 69.7, "theoDays": 28.9, "status": "🟢", "daily": 3.34, "weekArrival": 19.9, "nextArrival": 25, "lastArrival": 20, "supplier": "模拟供应商20", "f7": 73.0, "f30": 21.2}, {"code": "MAT001", "name": "非离子表活原料1", "category": "非离子表活", "unit": "kg", "level": "A", "stock": 171.8, "safety": 133.2, "theoDays": 29.0, "status": "🟢", "daily": 6.46, "weekArrival": 15.3, "nextArrival": 36.1, "lastArrival": 34.1, "supplier": "模拟供应商13", "f7": 141.9, "f30": 29.4}, {"code": "MAT108", "name": "功能添加剂原料108", "category": "功能添加剂", "unit": "kg", "level": "B", "stock": 156.9, "safety": 140.8, "theoDays": 30.6, "status": "🟢", "daily": 6.79, "weekArrival": 50.7, "nextArrival": 45.8, "lastArrival": 45.6, "supplier": "模拟供应商24", "f7": 160.1, "f30": 49.7}, {"code": "MAT033", "name": "消泡剂原料33", "category": "消泡剂", "unit": "kg", "level": "A", "stock": 85.8, "safety": 67.1, "theoDays": 33.4, "status": "🟢", "daily": 3.01, "weekArrival": 14.8, "nextArrival": 14.9, "lastArrival": 16.3, "supplier": "模拟供应商9", "f7": 79.5, "f30": 25.2}, {"code": "MAT083", "name": "防腐剂原料83", "category": "防腐剂", "unit": "kg", "level": "B", "stock": 153.3, "safety": 178.7, "theoDays": 36.5, "status": "🟢", "daily": 4.7, "weekArrival": 18.2, "nextArrival": 23, "lastArrival": 11.9, "supplier": "模拟供应商23", "f7": 138.6, "f30": 53.5}, {"code": "MAT093", "name": "消泡剂原料93", "category": "消泡剂", "unit": "kg", "level": "B", "stock": 176, "safety": 172, "theoDays": 38.0, "status": "🟢", "daily": 4.94, "weekArrival": 11.5, "nextArrival": 24, "lastArrival": 38.3, "supplier": "模拟供应商21", "f7": 152.9, "f30": 63.3}, {"code": "MAT064", "name": "两性表活原料64", "category": "两性表活", "unit": "kg", "level": "B", "stock": 239.2, "safety": 181, "theoDays": 38.6, "status": "🟢", "daily": 7.72, "weekArrival": 58.6, "nextArrival": 42.4, "lastArrival": 36.9, "supplier": "模拟供应商16", "f7": 243.8, "f30": 108.6}, {"code": "MAT086", "name": "阴离子表活原料86", "category": "阴离子表活", "unit": "kg", "level": "B", "stock": 94.3, "safety": 81.4, "theoDays": 39.1, "status": "🟢", "daily": 3, "weekArrival": 23.1, "nextArrival": 14.1, "lastArrival": 19.7, "supplier": "模拟供应商26", "f7": 96.4, "f30": 41.5}, {"code": "MAT088", "name": "两性表活原料88", "category": "两性表活", "unit": "kg", "level": "B", "stock": 126.8, "safety": 130.5, "theoDays": 44.9, "status": "🟢", "daily": 3.23, "weekArrival": 18.3, "nextArrival": 7.1, "lastArrival": 7.4, "supplier": "模拟供应商16", "f7": 122.5, "f30": 55.3}, {"code": "MAT068", "name": "溶剂原料68", "category": "溶剂", "unit": "kg", "level": "B", "stock": 187.2, "safety": 178.4, "theoDays": 55.1, "status": "🟢", "daily": 3.87, "weekArrival": 25.9, "nextArrival": 19.6, "lastArrival": 15.8, "supplier": "模拟供应商8", "f7": 186.0, "f30": 116.6}, {"code": "MAT056", "name": "溶剂原料56", "category": "溶剂", "unit": "kg", "level": "B", "stock": 212.3, "safety": 166.6, "theoDays": 70.6, "status": "🟢", "daily": 3.34, "weekArrival": 23.5, "nextArrival": 24.2, "lastArrival": 12.7, "supplier": "模拟供应商8", "f7": 212.4, "f30": 159.8}];
+const SUPPLIERS = [{"name": "模拟供应商1", "cat": "非离子表活", "region": "华东", "rate": 90, "risk_level": "高"}, {"name": "模拟供应商7", "cat": "丙烯酸单体", "region": "华东", "rate": 90, "risk_level": "高"}, {"name": "模拟供应商17", "cat": "聚醚", "region": "华南", "rate": 90, "risk_level": "高"}, {"name": "模拟供应商23", "cat": "防腐剂", "region": "华南", "rate": 90, "risk_level": "高"}, {"name": "模拟供应商13", "cat": "非离子表活", "region": "华东", "rate": 91, "risk_level": "高"}, {"name": "模拟供应商21", "cat": "消泡剂", "region": "华北", "rate": 91, "risk_level": "高"}, {"name": "模拟供应商28", "cat": "两性表活", "region": "华东", "rate": 91, "risk_level": "高"}, {"name": "模拟供应商29", "cat": "聚醚", "region": "华南", "rate": 91, "risk_level": "高"}, {"name": "模拟供应商2", "cat": "阴离子表活", "region": "华南", "rate": 92, "risk_level": "中"}, {"name": "模拟供应商26", "cat": "阴离子表活", "region": "华南", "rate": 92, "risk_level": "中"}, {"name": "模拟供应商3", "cat": "阳离子表活", "region": "华北", "rate": 93, "risk_level": "中"}, {"name": "模拟供应商9", "cat": "消泡剂", "region": "华北", "rate": 93, "risk_level": "中"}, {"name": "模拟供应商8", "cat": "溶剂", "region": "华南", "rate": 94, "risk_level": "中"}, {"name": "模拟供应商25", "cat": "非离子表活", "region": "华东", "rate": 94, "risk_level": "中"}, {"name": "模拟供应商27", "cat": "阳离子表活", "region": "华北", "rate": 94, "risk_level": "中"}, {"name": "模拟供应商22", "cat": "增稠剂", "region": "华东", "rate": 95, "risk_level": "低"}, {"name": "模拟供应商4", "cat": "两性表活", "region": "华东", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商10", "cat": "增稠剂", "region": "华东", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商11", "cat": "防腐剂", "region": "华南", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商12", "cat": "功能添加剂", "region": "华北", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商15", "cat": "阳离子表活", "region": "华北", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商19", "cat": "丙烯酸单体", "region": "华东", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商30", "cat": "有机硅", "region": "华北", "rate": 96, "risk_level": "低"}, {"name": "模拟供应商6", "cat": "有机硅", "region": "华北", "rate": 97, "risk_level": "低"}, {"name": "模拟供应商14", "cat": "阴离子表活", "region": "华南", "rate": 97, "risk_level": "低"}, {"name": "模拟供应商20", "cat": "溶剂", "region": "华南", "rate": 97, "risk_level": "低"}, {"name": "模拟供应商5", "cat": "聚醚", "region": "华南", "rate": 98, "risk_level": "低"}, {"name": "模拟供应商24", "cat": "功能添加剂", "region": "华北", "rate": 98, "risk_level": "低"}, {"name": "模拟供应商16", "cat": "两性表活", "region": "华东", "rate": 99, "risk_level": "低"}, {"name": "模拟供应商18", "cat": "有机硅", "region": "华北", "rate": 99, "risk_level": "低"}];
+const SUP_FULL = [{"name": "模拟供应商1", "cat": "非离子表活", "region": "华东", "rate": 90, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 3, "delay": 7.4, "quality": 88.9, "years": 6, "orders": 201, "respond": 41, "capacity": "紧张", "score": 83.7, "stars": "★★★★"}, {"name": "模拟供应商7", "cat": "丙烯酸单体", "region": "华东", "rate": 90, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 4, "delay": 5.6, "quality": 90.4, "years": 7, "orders": 292, "respond": 33, "capacity": "满产", "score": 86.1, "stars": "★★★★"}, {"name": "模拟供应商17", "cat": "聚醚", "region": "华南", "rate": 90, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 2, "delay": 6.9, "quality": 90.3, "years": 4, "orders": 340, "respond": 23, "capacity": "弹性", "score": 80.1, "stars": "★★★★"}, {"name": "模拟供应商23", "cat": "防腐剂", "region": "华南", "rate": 90, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 3, "delay": 10.7, "quality": 89.9, "years": 9, "orders": 389, "respond": 33, "capacity": "正常", "score": 90.0, "stars": "★★★★"}, {"name": "模拟供应商13", "cat": "非离子表活", "region": "华东", "rate": 91, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 3, "delay": 9.0, "quality": 92.7, "years": 8, "orders": 273, "respond": 44, "capacity": "弹性", "score": 89.3, "stars": "★★★★"}, {"name": "模拟供应商21", "cat": "消泡剂", "region": "华北", "rate": 91, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 4, "delay": 7.7, "quality": 91.7, "years": 7, "orders": 500, "respond": 12, "capacity": "弹性", "score": 87.0, "stars": "★★★★"}, {"name": "模拟供应商28", "cat": "两性表活", "region": "华东", "rate": 91, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 2, "delay": 7.5, "quality": 89.3, "years": 8, "orders": 360, "respond": 23, "capacity": "弹性", "score": 88.3, "stars": "★★★★"}, {"name": "模拟供应商29", "cat": "聚醚", "region": "华南", "rate": 91, "risk_level": "高", "color": "#EF4444", "note": "交付波动，建议备选", "nmat": 5, "delay": 6.0, "quality": 90.0, "years": 12, "orders": 228, "respond": 17, "capacity": "正常", "score": 92.5, "stars": "★★★★★"}, {"name": "模拟供应商2", "cat": "阴离子表活", "region": "华南", "rate": 92, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 2, "delay": 3.9, "quality": 90.4, "years": 1, "orders": 378, "respond": 7, "capacity": "满产", "score": 75.1, "stars": "★★★★"}, {"name": "模拟供应商26", "cat": "阴离子表活", "region": "华南", "rate": 92, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 6, "delay": 8.4, "quality": 93.2, "years": 11, "orders": 442, "respond": 10, "capacity": "正常", "score": 94.0, "stars": "★★★★★"}, {"name": "模拟供应商3", "cat": "阳离子表活", "region": "华北", "rate": 93, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 4, "delay": 8.9, "quality": 94.5, "years": 12, "orders": 318, "respond": 46, "capacity": "弹性", "score": 94.8, "stars": "★★★★★"}, {"name": "模拟供应商9", "cat": "消泡剂", "region": "华北", "rate": 93, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 6, "delay": 6.9, "quality": 94.5, "years": 8, "orders": 523, "respond": 42, "capacity": "正常", "score": 90.8, "stars": "★★★★★"}, {"name": "模拟供应商8", "cat": "溶剂", "region": "华南", "rate": 94, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 4, "delay": 6.3, "quality": 94.7, "years": 12, "orders": 259, "respond": 42, "capacity": "正常", "score": 95.4, "stars": "★★★★★"}, {"name": "模拟供应商25", "cat": "非离子表活", "region": "华东", "rate": 94, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 4, "delay": 7.3, "quality": 93.3, "years": 8, "orders": 476, "respond": 10, "capacity": "弹性", "score": 91.0, "stars": "★★★★★"}, {"name": "模拟供应商27", "cat": "阳离子表活", "region": "华北", "rate": 94, "risk_level": "中", "color": "#F59E0B", "note": "关注稳定性", "nmat": 2, "delay": 6.4, "quality": 95.9, "years": 6, "orders": 45, "respond": 33, "capacity": "弹性", "score": 87.8, "stars": "★★★★"}, {"name": "模拟供应商22", "cat": "增稠剂", "region": "华东", "rate": 95, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 5, "delay": 5.8, "quality": 96.3, "years": 12, "orders": 549, "respond": 8, "capacity": "满产", "score": 96.4, "stars": "★★★★★"}, {"name": "模拟供应商4", "cat": "两性表活", "region": "华东", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 5, "delay": 4.7, "quality": 96.2, "years": 9, "orders": 579, "respond": 33, "capacity": "弹性", "score": 94.9, "stars": "★★★★★"}, {"name": "模拟供应商10", "cat": "增稠剂", "region": "华东", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 5, "delay": 6.7, "quality": 94.5, "years": 12, "orders": 372, "respond": 29, "capacity": "紧张", "score": 96.3, "stars": "★★★★★"}, {"name": "模拟供应商11", "cat": "防腐剂", "region": "华南", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 7, "delay": 5.1, "quality": 94.2, "years": 11, "orders": 62, "respond": 28, "capacity": "弹性", "score": 96.3, "stars": "★★★★★"}, {"name": "模拟供应商12", "cat": "功能添加剂", "region": "华北", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 8, "delay": 5.0, "quality": 97.4, "years": 10, "orders": 378, "respond": 11, "capacity": "满产", "score": 97.2, "stars": "★★★★★"}, {"name": "模拟供应商15", "cat": "阳离子表活", "region": "华北", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 4, "delay": 5.2, "quality": 96.3, "years": 10, "orders": 81, "respond": 24, "capacity": "满产", "score": 96.9, "stars": "★★★★★"}, {"name": "模拟供应商19", "cat": "丙烯酸单体", "region": "华东", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 6, "delay": 6.8, "quality": 97.1, "years": 4, "orders": 404, "respond": 24, "capacity": "弹性", "score": 85.1, "stars": "★★★★"}, {"name": "模拟供应商30", "cat": "有机硅", "region": "华北", "rate": 96, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 3, "delay": 5.9, "quality": 97.0, "years": 8, "orders": 367, "respond": 30, "capacity": "正常", "score": 93.1, "stars": "★★★★★"}, {"name": "模拟供应商6", "cat": "有机硅", "region": "华北", "rate": 97, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 4, "delay": 4.6, "quality": 95.6, "years": 11, "orders": 505, "respond": 48, "capacity": "弹性", "score": 97.2, "stars": "★★★★★"}, {"name": "模拟供应商14", "cat": "阴离子表活", "region": "华南", "rate": 97, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 2, "delay": 2.3, "quality": 97.8, "years": 2, "orders": 560, "respond": 27, "capacity": "紧张", "score": 81.8, "stars": "★★★★"}, {"name": "模拟供应商20", "cat": "溶剂", "region": "华南", "rate": 97, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 6, "delay": 5.2, "quality": 98.8, "years": 5, "orders": 346, "respond": 48, "capacity": "满产", "score": 88.1, "stars": "★★★★"}, {"name": "模拟供应商5", "cat": "聚醚", "region": "华南", "rate": 98, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 3, "delay": 7.2, "quality": 98.5, "years": 9, "orders": 342, "respond": 44, "capacity": "满产", "score": 96.5, "stars": "★★★★★"}, {"name": "模拟供应商24", "cat": "功能添加剂", "region": "华北", "rate": 98, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 2, "delay": 3.6, "quality": 98.3, "years": 5, "orders": 384, "respond": 45, "capacity": "正常", "score": 88.5, "stars": "★★★★"}, {"name": "模拟供应商16", "cat": "两性表活", "region": "华东", "rate": 99, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 3, "delay": 6.8, "quality": 97.7, "years": 10, "orders": 148, "respond": 18, "capacity": "弹性", "score": 98.8, "stars": "★★★★★"}, {"name": "模拟供应商18", "cat": "有机硅", "region": "华北", "rate": 99, "risk_level": "低", "color": "#10B981", "note": "表现良好", "nmat": 3, "delay": 2.5, "quality": 99.1, "years": 11, "orders": 332, "respond": 37, "capacity": "弹性", "score": 99.2, "stars": "★★★★★"}];
+
+
+const petBuddy = document.getElementById('petBuddy');
+// 初始表情：微笑
+petBuddy.style.bottom = '24px';
+
+// ===== 未来7/30天预测数字滚动动画 =====
+(function(){
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const table = e.target;
+        if(table.dataset.animated) return;
+        table.dataset.animated = '1';
+        table.querySelectorAll('.fc-num[data-target]').forEach((el, i)=>{
+          const target = parseFloat(el.dataset.target);
+          const start = performance.now();
+          const dur = 1200 + i*150;
+          function tick(t){
+            const k = Math.min(1, (t-start)/dur);
+            const ease = 1 - Math.pow(1-k, 3);
+            const v = target * ease;
+            el.textContent = (target%1===0) ? Math.round(v) : v.toFixed(1);
+            if(k<1) requestAnimationFrame(tick);
+            else el.classList.add('pulse');
+          }
+          requestAnimationFrame(tick);
+        });
+      }
+    });
+  }, {threshold:0.3});
+  document.querySelectorAll('.forecast-table').forEach(t=>observer.observe(t));
+})();
+
+// ===== Supply 顾问跟随页面滑动 =====
+// 策略：position:fixed 始终贴右下，但根据页面滚动距离添加 transform translateY，
+// 让宠物产生明显的"跟随"感。滚动时下移，停止时回弹。
+let petBaseBottom = 24;  // 基础 bottom 值
+let petFollowOffset = 0;  // 滚动附加偏移
+let petLastScrollY = window.scrollY;
+let petStopTimer = null;
+
+window.addEventListener('scroll', () => {
+  if (petDragging) return;
+  const dy = window.scrollY - petLastScrollY;
+  petLastScrollY = window.scrollY;
+  // 滚动越多，宠物偏移越大（最大 ±80px）
+  petFollowOffset = Math.max(-80, Math.min(80, petFollowOffset + dy * 0.4));
+  petBuddy.style.transform = `translateY(${petFollowOffset}px) rotate(${petFollowOffset * 0.15}deg)`;
+  // 表情跟随：向下滚时变惊讶，向上滚时变开心
+  if (dy > 2) petMood('o');
+  else if (dy < -2) petMood('happy');
+  // 停止滚动 1.5s 后回弹
+  clearTimeout(petStopTimer);
+  petStopTimer = setTimeout(() => {
+    let backT = 0;
+    const backStart = performance.now();
+    const backDur = 600;
+    const backStartVal = petFollowOffset;
+    function backTick(t) {
+      const k = Math.min(1, (t - backStart) / backDur);
+      const ease = k * (2 - k);
+      petFollowOffset = backStartVal * (1 - ease);
+      petBuddy.style.transform = `translateY(${petFollowOffset}px) rotate(${petFollowOffset * 0.15}deg)`;
+      if (k < 1) requestAnimationFrame(backTick);
+      else { petFollowOffset = 0; petMood('smile'); }
+    }
+    requestAnimationFrame(backTick);
+  }, 1500);
+}, {passive: true});
+
+
+const petPanel = document.getElementById('petPanel');
+let petDragging = false, petMoved = false, petOffX = 0, petOffY = 0;
+petBuddy.addEventListener('pointerdown', e => {
+  petDragging = true; petMoved = false;
+  petBuddy.classList.add('dragging');
+  const rect = petBuddy.getBoundingClientRect();
+  petOffX = e.clientX - rect.left; petOffY = e.clientY - rect.top;
+  petBuddy.setPointerCapture(e.pointerId);
+});
+petBuddy.addEventListener('pointermove', e => {
+  if (!petDragging) return;
+  petMoved = true;
+  const x = e.clientX - petOffX, y = e.clientY - petOffY;
+  petBuddy.style.left = Math.max(0, Math.min(window.innerWidth - 90, x)) + 'px';
+  petBuddy.style.top = Math.max(0, Math.min(window.innerHeight - 90, y)) + 'px';
+  petBuddy.style.right = 'auto'; petBuddy.style.bottom = 'auto';
+});
+petBuddy.addEventListener('pointerup', e => {
+  petDragging = false; petBuddy.classList.remove('dragging');
+  if (!petMoved) togglePetPanel();
+});
+function togglePetPanel() {
+  if (petPanel.classList.contains('show')) {
+    petPanel.classList.remove('show'); petPanel.style.display = 'none';
+  } else {
+    petPanel.style.display = 'block';
+    requestAnimationFrame(() => petPanel.classList.add('show'));
+    const pr = petBuddy.getBoundingClientRect();
+    let px = pr.left + pr.width / 2 - 170;
+    px = Math.max(8, Math.min(window.innerWidth - 348, px));
+    let py = pr.top - petPanel.offsetHeight - 10;
+    if (py < 8) py = pr.bottom + 10;
+    petPanel.style.left = px + 'px'; petPanel.style.top = py + 'px';
+    petPanel.style.right = 'auto'; petPanel.style.bottom = 'auto';
+  }
+}
+function petMood(mood) {
+  const m = document.getElementById('petMouth');
+  if (!m) return;
+  if (mood === 'happy') { m.setAttribute('width','26'); m.setAttribute('height','4'); m.setAttribute('rx','2'); }
+  else if (mood === 'o') { m.setAttribute('width','10'); m.setAttribute('height','8'); m.setAttribute('rx','4'); }
+  else if (mood === 'flat') { m.setAttribute('width','22'); m.setAttribute('height','2'); m.setAttribute('rx','1'); }
+  else { m.setAttribute('width','22'); m.setAttribute('height','3'); m.setAttribute('rx','1.5'); }
+}
+function petAsk(q) {
+  const chat = document.getElementById('petChat');
+  chat.innerHTML += `<div class="bubble user">${q}</div>`;
+  petMood('o');
+  setTimeout(() => {
+    const ans = getAnswer(q);
+    chat.innerHTML += `<div class="bubble ai">${ans}</div>`;
+    petMood(ans.startsWith('✅') ? 'happy' : ans.startsWith('🔴') ? 'o' : 'smile');
+    chat.scrollTop = chat.scrollHeight;
+    petSpeak(ans);
+  }, 500);
+}
+function petHandle(e) {
+  e.preventDefault();
+  const input = document.getElementById('petInput');
+  if (input.value.trim()) petAsk(input.value.trim());
+  input.value = '';
+}
+let petVoiceOn = true;
+const petVoiceBtn = document.getElementById('petVoiceBtn');
+function togglePetVoice() {
+  petVoiceOn = !petVoiceOn;
+  if (petVoiceBtn) { petVoiceBtn.textContent = petVoiceOn ? '🔊 语音' : '🔇 静音'; }
+  if (!petVoiceOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+function petSpeak(text) {
+  if (!petVoiceOn || !('speechSynthesis' in window)) return;
+  const clean = String(text).replace(/[🔴🟡🟢✅❌📋📊📦🏢⚠️🔍🤔👋🎯💡]/g, '').replace(/\n/g, '，');
+  if (!clean.trim()) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(clean);
+  u.lang = 'zh-CN'; u.rate = 1.0; u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+const PET_IDLE_TIPS = [
+  '需要我帮你看看今天的采购建议吗？',
+  '模拟供应商3 的准时率偏低，要我分析下风险吗？',
+  '未来30天有物料可能低于安全线，想了解详情吗？',
+  '拖着我放到任何位置，随时点我聊天～',
+  '今天健康指数 79.8 分（关注），需要我解释下吗？',
+];
+let petIdleIdx = 0;
+setInterval(() => {
+  if (petPanel.classList.contains('show') || petDragging) return;
+  const tip = PET_IDLE_TIPS[petIdleIdx % PET_IDLE_TIPS.length];
+  petIdleIdx++;
+  togglePetPanel();
+  setTimeout(() => {
+    const chat = document.getElementById('petChat');
+    chat.innerHTML += `<div class="bubble ai">💡 ${tip}</div>`;
+    chat.scrollTop = chat.scrollHeight; petMood('happy');
+  }, 300);
+}, 25000);
+
+// 指标卡动画
+function counterUp(card) {
+  const el = card.querySelector('strong');
+  if (!el) return;
+  const to = parseFloat(card.dataset.target || el.textContent);
+  const dur = parseFloat(card.dataset.dur || 1.5);
+  const start = performance.now();
+  function tick(t) {
+    const k = Math.min(1, (t - start) / (dur * 1000));
+    const ease = 1 - Math.pow(1 - k, 3);
+    const v = (to) * ease;
+    el.textContent = Number.isInteger(to) ? Math.round(v) : v.toFixed(1);
+    if (k < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function metricRipple(card) {
+  const r = card.getBoundingClientRect();
+  const rip = document.createElement('span');
+  rip.className = 'ripple';
+  const size = Math.max(r.width, r.height);
+  rip.style.width = rip.style.height = size + 'px';
+  rip.style.left = (r.width / 2 - size / 2) + 'px';
+  rip.style.top = (r.height / 2 - size / 2) + 'px';
+  card.appendChild(rip);
+  setTimeout(() => rip.remove(), 600);
+}
+
+// 供应商画像切换
+function switchProfileGroup(grp) {
+  document.querySelectorAll('.profile-group').forEach(g => g.style.display = 'none');
+  const target = document.getElementById('profile-group-' + grp);
+  if (target) target.style.display = 'grid';
+  document.querySelectorAll('.profile-switch button').forEach((b, i) => {
+    b.classList.toggle('active', (i + 1) === grp);
+  });
+}
+
+// 供应商详情弹窗（SUP_FULL 由下方 html 注入）
+function showSupplierDetail(name) {
+  const s = SUP_FULL.find(x => x.name === name);
+  if (!s) return;
+  const rel = MATERIALS.filter(m => m.supplier === name);
+  const red = rel.filter(m => m.theoDays <= 15);
+  const html = `\n    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">\n      <div><h2 style="font-size:22px;color:#1f2937;">${s.name}</h2><div style="font-size:12px;color:#6b7280;margin-top:2px;">${s.cat} · ${s.region}</div></div>\n      <button onclick="closeSupplierDetail()" style="background:none;border:none;color:#6b7280;font-size:18px;cursor:pointer;">✕</button>\n    </div>\n    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">\n      <div class="sdp-card"><span>健康分</span><strong style="color:${s.color}">${s.score} ${s.stars}</strong></div>\n      <div class="sdp-card"><span>风险等级</span><strong style="color:${s.color}">${s.risk_level}</strong></div>\n      <div class="sdp-card"><span>准时率</span><strong style="color:${s.color}">${s.rate}%</strong></div>\n      <div class="sdp-card"><span>平均延期</span><strong>${s.delay} 天</strong></div>\n      <div class="sdp-card"><span>质量合格率</span><strong>${s.quality}%</strong></div>\n      <div class="sdp-card"><span>合作年限</span><strong>${s.years} 年</strong></div>\n      <div class="sdp-card"><span>累计订单</span><strong>${s.orders} 单</strong></div>\n      <div class="sdp-card"><span>响应速度</span><strong>${s.respond} 小时</strong></div>\n      <div class="sdp-card"><span>产能状态</span><strong>${s.capacity}</strong></div>\n      <div class="sdp-card"><span>关联物料</span><strong>${s.nmat} 种</strong></div>\n    </div>\n    <div style="font-size:13px;color:#6b7280;margin-bottom:8px;">关联物料清单（${rel.length}种，${red.length}种预警）</div>\n    <div style="max-height:200px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:12px;padding:10px;font-size:12px;">\n      ${rel.map(m => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;"><span>${m.status} ${m.name}</span><span style="color:#6b7280">库存${m.stock} · 可用${m.theoDays}天</span></div>`).join('') || '<div style="color:#9ca3af;text-align:center;">无关联物料</div>'}\n    </div>\n    <div style="margin-top:14px;display:flex;gap:10px;">\n      <button class="btn" onclick="askPetAbout('${s.name}')" style="flex:1;">🤖 询问顾问</button>\n      <button class="btn" style="flex:1;background:#fff;color:#1f2937;border:1px solid #e5e7eb;" onclick="closeSupplierDetail()">关闭</button>\n    </div>`;
+  document.getElementById('supplierModalBody').innerHTML = html;
+  document.getElementById('supplierModal').classList.add('show');
+}
+function closeSupplierDetail() {
+  document.getElementById('supplierModal').classList.remove('show');
+}
+function askPetAbout(name) {
+  closeSupplierDetail();
+  petAsk(`分析下${name}的交付情况`);
+}
+
+setTimeout(() => { petMood('happy'); }, 2000);
+
+// AI Copilot 问答（页面右侧聊天窗口）
+function askQuestion(q) {
+  const win = document.getElementById('chatWindow');
+  win.innerHTML += '<div class="bubble user">' + q + '</div>';
+  const ans = getAnswer(q);
+  setTimeout(() => {
+    win.innerHTML += '<div class="bubble ai">' + ans + '</div>';
+    win.scrollTop = win.scrollHeight;
+  }, 300);
+}
+
+function getAnswer(q) {
+  if (q.includes('采购建议')) {
+    const low = MATERIALS.filter(m => m.stock < m.safety);
+    if (low.length === 0) return '✅ 所有物料库存均在安全线以上，暂无采购建议。';
+    return '📋 采购建议（按补货量排序）：\n' + low
+      .map(m => { const qty = Math.round((m.safety - m.stock) * 1.2 * 10)/10; return '· ' + m.name + '：库存' + m.stock + '，安全线' + m.safety + '，建议补货' + qty; })
+      .slice(0, 8).join('\n');
+  }
+  if (q.includes('健康指数')) {
+    const below = MATERIALS.filter(m => m.stock < m.safety).length;
+    const score = Math.round(100 - (below / MATERIALS.length) * 30);
+    let level = '🔴 风险';
+    if (score >= 80) level = '🟢 健康';
+    else if (score >= 60) level = '🟡 关注';
+    return '📊 供应链健康指数：' + score + ' 分（' + level + '）\n今日风险：' + below + ' 项低于安全线';
+  }
+  if (q.includes('断供') || q.includes('未来7天')) {
+    const risk = MATERIALS.filter(m => m.f7 < 0).sort((a,b) => a.f7 - b.f7);
+    if (risk.length === 0) return '✅ 未来7天无断供风险物料。';
+    return '🔴 未来7天断供风险物料：\n' + risk.slice(0, 8).map(m => '· ' + m.name + '：7天后库存 ' + m.f7 + '（日均消耗' + m.daily + '）').join('\n');
+  }
+  for (const m of MATERIALS) {
+    if (q.includes(m.name) || q.includes(m.code)) {
+      const st = m.stock < m.safety * 0.6 ? '🔴 高风险' : (m.stock < m.safety ? '🟡 低于安全线' : '🟢 正常');
+      const sug = m.f7 < 0 ? '立即紧急补货' : (m.theoDays <= 15 ? '提前锁价补货' : '维持常规补货');
+      return '📦 ' + m.name + '（' + m.code + '）：\n· 当前库存 ' + m.stock + '，安全线 ' + m.safety + '\n· 日均消耗 ' + m.daily + '，理论可用 ' + m.theoDays + ' 天\n· 未来7天 ' + m.f7 + ' | 未来30天 ' + m.f30 + '\n· 预警：' + st + '  |  供应商：' + m.supplier + '\n· 建议：' + sug;
+    }
+  }
+  for (const s of SUPPLIERS) {
+    if (q.includes(s.name)) {
+      const note = s.rate < 92 ? '⚠️ 建议关注交付稳定性，建立备选机制' : '✅ 表现良好';
+      return '🏢 ' + s.name + '（' + s.cat + ' · ' + s.region + '）：\n· 交付准时率 ' + s.rate + '%（风险等级：' + s.risk_level + '）\n· ' + note;
+    }
+  }
+  return '🤔 我暂时无法回答。试试：库存查询 / 采购建议 / 健康指数 / 断供风险 / 供应商查询';
+}
+
+function handleChat(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  if (input.value.trim()) askQuestion(input.value.trim());
+  input.value = '';
+}
+
+function runSim() {
+  const name = document.getElementById('simInput').value.trim();
+  const sup = SUPPLIERS.find(s => s.name.includes(name.replace('停产', '').replace('天', '')) || name.includes(s.name));
+  if (!sup) {
+    document.getElementById('simStatus').textContent = '⚠️ 未找到该供应商，请输入如：模拟供应商1';
+    return;
+  }
+  const rel = MATERIALS.filter(m => m.supplier === sup.name);
+  const red = rel.filter(m => m.theoDays <= 15);
+  const cut = rel.filter(m => m.f7 < 0);
+  const alt = SUPPLIERS.filter(s => s.cat === sup.cat && s.name !== sup.name && s.rate >= sup.rate);
+  const reduce = alt.length > 0 ? Math.min(95, 50 + alt.length * 15) : 20;
+  document.getElementById('simMat').textContent = rel.length;
+  document.getElementById('simProd').textContent = Math.max(1, Math.round(rel.length * 0.6));
+  document.getElementById('simRed').textContent = red.length;
+  document.getElementById('simCut').textContent = cut.length;
+  document.getElementById('simSup').textContent = alt.length > 0 ? alt[0].name : '无';
+  document.getElementById('simReduce').textContent = reduce + '%';
+  let status = '模拟完成：' + sup.name + '停产影响' + rel.length + '种物料（' + sup.cat + '类），' + red.length + '种进入预警，' + cut.length + '种7天内断供。';
+  if (alt.length > 0) status += '推荐备选 ' + alt[0].name + '（准时率' + alt[0].rate + '%）。';
+  else status += '暂无备选，风险较高。';
+  document.getElementById('simStatus').textContent = status;
+}
+
+// ===== Supply 顾问 AI API 接入（OpenAI 兼容） =====
+let apiConfig = null;
+(function loadApiConfig() {
+  try {
+    const cfg = localStorage.getItem('sg_api_config');
+    if (cfg) { apiConfig = JSON.parse(cfg); updateApiStatus(); }
+  } catch(e) {}
+})();
+
+function updateApiStatus() {
+  const el = document.getElementById('apiStatusText');
+  if (!el) return;
+  if (apiConfig && apiConfig.apiKey) {
+    el.textContent = '已接入 ' + (apiConfig.apiModel || '外部模型');
+  } else {
+    el.textContent = '本地问答模式（⚙ 可接入外部 AI）';
+  }
+  const dot = document.querySelector('.pet-status .dot');
+  if (dot) dot.style.background = apiConfig && apiConfig.apiKey ? '#0ea5e9' : '#10B981';
+}
+
+function openApiSettings() {
+  if (apiConfig) {
+    document.getElementById('apiKey').value = apiConfig.apiKey || '';
+    document.getElementById('apiBase').value = apiConfig.apiBase || 'https://api.openai.com/v1';
+    document.getElementById('apiModel').value = apiConfig.apiModel || 'gpt-3.5-turbo';
+    document.getElementById('apiSystem').value = apiConfig.apiSystem || '你是 Supply 顾问，化工供应链 AI 助手。基于用户提供的物料/供应商数据给出专业、简洁的中文回答。';
+  } else {
+    document.getElementById('apiKey').value = '';
+    document.getElementById('apiBase').value = 'https://api.openai.com/v1';
+    document.getElementById('apiModel').value = 'gpt-3.5-turbo';
+    document.getElementById('apiSystem').value = '你是 Supply 顾问，化工供应链 AI 助手。基于用户提供的物料/供应商数据给出专业、简洁的中文回答。';
+  }
+  document.getElementById('apiTestMsg').className = 'api-test-msg';
+  document.getElementById('apiModal').classList.add('show');
+}
+function closeApiSettings() {
+  document.getElementById('apiModal').classList.remove('show');
+}
+function saveApiSettings() {
+  apiConfig = {
+    apiKey: document.getElementById('apiKey').value.trim(),
+    apiBase: document.getElementById('apiBase').value.trim() || 'https://api.openai.com/v1',
+    apiModel: document.getElementById('apiModel').value.trim() || 'gpt-3.5-turbo',
+    apiSystem: document.getElementById('apiSystem').value.trim() || '你是 Supply 顾问，化工供应链 AI 助手。'
+  };
+  try { localStorage.setItem('sg_api_config', JSON.stringify(apiConfig)); } catch(e) {}
+  updateApiStatus();
+  closeApiSettings();
+}
+function clearApiSettings() {
+  apiConfig = null;
+  try { localStorage.removeItem('sg_api_config'); } catch(e) {}
+  updateApiStatus();
+  closeApiSettings();
+}
+function testApi() {
+  const msg = document.getElementById('apiTestMsg');
+  const key = document.getElementById('apiKey').value.trim();
+  const base = document.getElementById('apiBase').value.trim() || 'https://api.openai.com/v1';
+  const model = document.getElementById('apiModel').value.trim() || 'gpt-3.5-turbo';
+  msg.className = 'api-test-msg';
+  msg.style.display = 'block';
+  msg.textContent = '⏳ 测试中...';
+  msg.style.background = '#dbeafe'; msg.style.color = '#1e3a8a';
+  const url = base.replace(/\/+$/, '') + '/chat/completions';
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: model, messages: [{ role: 'user', content: '回复"连接成功"四个字' }], max_tokens: 20 })
+  })
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(d => {
+    const text = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || 'OK';
+    msg.className = 'api-test-msg ok';
+    msg.textContent = '✅ 连接成功：' + String(text).slice(0, 50);
+  })
+  .catch(e => {
+    msg.className = 'api-test-msg err';
+    msg.textContent = '❌ 连接失败：' + e.message + '（请检查 Key/Base URL/模型名）';
+  });
+}
+
+// 优先调用外部 API，失败时回退本地问答
+async function askAPI(q) {
+  if (!apiConfig || !apiConfig.apiKey) return null;
+  const sysMsg = apiConfig.apiSystem || '你是 Supply 顾问，化工供应链 AI 助手。';
+  const base = (apiConfig.apiBase || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const url = base + '/chat/completions';
+  const context = '当前供应链数据：健康指数 ' + document.getElementById('healthScore') ? '' : '';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiConfig.apiKey },
+      body: JSON.stringify({
+        model: apiConfig.apiModel || 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: sysMsg },
+          { role: 'user', content: q }
+        ],
+        temperature: 0.7
+      })
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (text) return text.trim();
+    return null;
+  } catch(e) {
+    console.warn('API 调用失败，回退本地:', e.message);
+    return null;
+  }
+}
+
+// 重写 petAsk：先试 API，失败回退本地
+const _petAskLocal = petAsk;
+petAsk = async function(q) {
+  const chat = document.getElementById('petChat');
+  chat.innerHTML += '<div class="bubble user">' + q + '</div>';
+  petMood('o');
+  const apiAns = await askAPI(q);
+  let ans;
+  if (apiAns) {
+    ans = apiAns;
+    const s = document.getElementById('apiStatusText');
+    if (s) s.textContent = 'AI 回复中...';
+  } else {
+    ans = getAnswer(q);
+  }
+  chat.innerHTML += '<div class="bubble ai">' + ans.replace(/</g, '&lt;') + '</div>';
+  petMood(ans.startsWith('✅') ? 'happy' : ans.startsWith('🔴') ? 'o' : 'smile');
+  chat.scrollTop = chat.scrollHeight;
+  petSpeak(ans);
+}
+
+</script>
+</body>
+</html>
