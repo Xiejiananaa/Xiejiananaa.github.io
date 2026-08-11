@@ -329,7 +329,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       <div class="sub">功能化学品供应保障与库存健康智能决策平台 · 数据驱动 · AI 赋能</div>
     </div>
   </div>
-  <div class="clock">📅 2026-08-11 · 09:16</div>
+  <div class="clock">📅 2026-08-11 · 09:21</div>
   <div class="ai-status">系统正常</div>
 </header>
 
@@ -465,7 +465,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
   <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#e6a817;"></i>&nbsp;中风险</span>
   <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#5b8c5a;"></i>&nbsp;低风险</span>
   <span style="color:#A8A29E;">｜</span>
-  <span style="color:#A8A29E;">➤ 箭头 = 跨国化工物流航线</span>
+  <span style="color:#A8A29E;">➤ 箭头 = 跨国化工物流航线（14 条）</span>
   <span style="color:#A8A29E;">· 地图可拖拽缩放</span>
 </div>
 <div style="margin-top:10px;">
@@ -544,7 +544,10 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
     {name:'朱拜勒', value:[49.66,27.01], r:4},
     {name:'东京', value:[139.69,35.69], r:3},
     {name:'蔚山', value:[129.36,35.54], r:3},
-    {name:'新加坡', value:[103.85,1.35], r:3}
+    {name:'新加坡', value:[103.85,1.35], r:3},
+    {name:'吉隆坡', value:[101.69,3.14], r:3},
+    {name:'孟买', value:[72.88,19.08], r:3},
+    {name:'洛杉矶', value:[-118.24,34.05], r:4}
   ];
   var coordOf = {};
   nodes.forEach(function(n){ coordOf[n.name] = n.value; });
@@ -554,7 +557,15 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
     {fromName:'朱拜勒', toName:'上海'},
     {fromName:'上海', toName:'东京'},
     {fromName:'上海', toName:'蔚山'},
-    {fromName:'上海', toName:'新加坡'}
+    {fromName:'上海', toName:'新加坡'},
+    {fromName:'上海', toName:'吉隆坡'},
+    {fromName:'上海', toName:'孟买'},
+    {fromName:'朱拜勒', toName:'休斯顿'},
+    {fromName:'鹿特丹', toName:'上海'},
+    {fromName:'上海', toName:'洛杉矶'},
+    {fromName:'新加坡', toName:'上海'},
+    {fromName:'吉隆坡', toName:'新加坡'},
+    {fromName:'孟买', toName:'朱拜勒'}
   ].map(function(l){ return { coords: [coordOf[l.fromName], coordOf[l.toName]], fromName: l.fromName, toName: l.toName }; });
 
   chart.setOption({
@@ -595,7 +606,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       {
         name: '物流航线', type: 'lines', coordinateSystem: 'geo', zlevel: 1,
         effect: { show: true, symbol: 'arrow', symbolSize: 5, trailLength: 0.5 },
-        lineStyle: { color: '#c0392b', width: 1.4, opacity: 0.55, curveness: 0.3 },
+        lineStyle: { color: '#c0392b', width: 1.2, opacity: 0.4, curveness: 0.3 },
         data: lineData
       }
     ]
