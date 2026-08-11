@@ -329,7 +329,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       <div class="sub">功能化学品供应保障与库存健康智能决策平台 · 数据驱动 · AI 赋能</div>
     </div>
   </div>
-  <div class="clock">📅 2026-08-11 · 09:41</div>
+  <div class="clock">📅 2026-08-11 · 09:45</div>
   <div class="ai-status">系统正常</div>
 </header>
 
@@ -681,14 +681,6 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       regions: regions
     },
     series: [
-      {
-        name: '供应商分布', type: 'effectScatter', coordinateSystem: 'geo', zlevel: 2,
-        rippleEffect: { brushType: 'stroke', scale: 3, period: 4 },
-        symbolSize: function(val){ return Math.max(8, Math.min(32, val[2] * 5 + 4)); },
-        itemStyle: { color: function(p){ return C[p.data.risk] || C['低']; } },
-        label: { show: false },
-        data: scatterData.map(function(d){ return { name: d.name, value: [d.coord[0], d.coord[1], d.sup], risk: d.risk }; })
-      },
       {
         name: '化工走廊', type: 'lines', coordinateSystem: 'geo', zlevel: 1,
         effect: { show: true, symbol: 'arrow', symbolSize: 6, trailLength: 0.4 },
