@@ -329,7 +329,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       <div class="sub">功能化学品供应保障与库存健康智能决策平台 · 数据驱动 · AI 赋能</div>
     </div>
   </div>
-  <div class="clock">📅 2026-08-11 · 09:45</div>
+  <div class="clock" id="liveClock">📅 2026-08-11 · 09:57</div>
   <div class="ai-status">系统正常</div>
 </header>
 
@@ -1234,9 +1234,9 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
   <svg viewBox="0 0 110 110">
     <defs>
       <linearGradient id="petGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#1a1a2e"/>
-        <stop offset="50%" stop-color="#16213e"/>
-        <stop offset="100%" stop-color="#0f0f1a"/>
+        <stop offset="0%" stop-color="#2563eb"/>
+        <stop offset="55%" stop-color="#1e3a8a"/>
+        <stop offset="100%" stop-color="#0c1f54"/>
       </linearGradient>
       <linearGradient id="petGold" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="#FDE047"/>
@@ -1256,70 +1256,59 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
     </defs>
-    <!-- 光环 -->
-    <circle class="pet-ring" cx="55" cy="55" r="46" fill="none" stroke="rgba(34,211,238,0.55)" stroke-width="1.5" filter="url(#petGlow)">
+    <!-- 光环（青色呼吸） -->
+    <circle class="pet-ring" cx="55" cy="60" r="46" fill="none" stroke="rgba(37,99,235,0.5)" stroke-width="1.5" filter="url(#petGlow)">
       <animate attributeName="r" values="46;50;46" dur="2.5s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.55;0.2;0.55" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0.18;0.5" dur="2.5s" repeatCount="indefinite"/>
     </circle>
-    <circle class="pet-ring" cx="55" cy="55" r="38" fill="none" stroke="rgba(34,211,238,0.3)" stroke-width="1">
+    <circle class="pet-ring" cx="55" cy="60" r="38" fill="none" stroke="rgba(37,99,235,0.28)" stroke-width="1">
       <animate attributeName="r" values="38;42;38" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
     </circle>
-    <!-- 天线 -->
-    <line x1="55" y1="14" x2="55" y2="2" stroke="url(#petGold)" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="55" cy="2" r="4" fill="#FDE047" filter="url(#petGlow)">
+    <!-- 金色天线（AI 感知） -->
+    <line x1="55" y1="20" x2="55" y2="7" stroke="url(#petGold)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="55" cy="7" r="4" fill="#FDE047" filter="url(#petGlow)">
       <animate attributeName="r" values="4;5.5;4" dur="1.8s" repeatCount="indefinite"/>
     </circle>
-    <!-- 机甲头盔主体 -->
-    <polygon points="55,16 78,28 85,58 80,82 55,92 30,82 25,58 32,28" fill="url(#petGrad)" stroke="url(#petGold)" stroke-width="1.8"/>
-    <!-- 额头装甲条纹 -->
-    <rect x="38" y="24" width="34" height="4" rx="2" fill="url(#petGold)" opacity="0.7"/>
-    <rect x="42" y="20" width="26" height="2" rx="1" fill="url(#petCyan)" opacity="0.5"/>
-    <!-- 护目镜区域 -->
-    <rect x="28" y="38" width="54" height="22" rx="8" fill="#0a1628" stroke="url(#petCyan)" stroke-width="1.5"/>
-    <!-- 左右眼睛（LED发光） -->
-    <g id="petEyes">
-      <ellipse cx="42" cy="50" rx="9" ry="10" fill="url(#petCyan)" filter="url(#petGlow)">
-        <animate attributeName="opacity" values="1;0.3;1" dur="3.5s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="68" cy="50" rx="9" ry="10" fill="url(#petCyan)" filter="url(#petGlow)">
-        <animate attributeName="opacity" values="1;0.3;1" dur="3.5s" begin="0.3s" repeatCount="indefinite"/>
-      </ellipse>
+    <!-- 圆脸主体（拟人 AI 助手） -->
+    <circle cx="55" cy="60" r="34" fill="url(#petGrad)" stroke="url(#petGold)" stroke-width="1.8"/>
+    <circle cx="55" cy="60" r="27" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <!-- 金色发带 -->
+    <path d="M25 48 Q55 28 85 48" fill="none" stroke="url(#petGold)" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+    <!-- 微笑弯眼（眨眼动画） -->
+    <g>
+      <path d="M37 61 Q43 55 49 61" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M61 61 Q67 55 73 61" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="43" cy="61" r="1.6" fill="#22d3ee"/>
+      <circle cx="67" cy="61" r="1.6" fill="#22d3ee"/>
+      <animate attributeName="opacity" values="1;1;0.15;1;1" dur="5s" repeatCount="indefinite"/>
     </g>
-    <!-- 眉心能量晶核 -->
-    <circle cx="55" cy="49" r="2.5" fill="#FDE047" filter="url(#petGlow)">
-      <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
-    </circle>
-    <!-- 嘴部呼吸灯 -->
-    <rect id="petMouth" x="44" y="65" width="22" height="3" rx="1.5" fill="url(#petCyan)" opacity="0.7">
-      <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite"/>
-    </rect>
-    <!-- 胸口能量核心 -->
-    <circle cx="55" cy="80" r="10" fill="url(#petCore)"/>
-    <circle cx="55" cy="80" r="4" fill="#22d3ee" filter="url(#petGlow)">
+    <!-- 微笑嘴（金色弧线，表情切换） -->
+    <path id="petMouth" d="M45 76 Q55 85 65 76" fill="none" stroke="url(#petGold)" stroke-width="2.6" stroke-linecap="round"/>
+    <!-- 脸颊红晕 -->
+    <circle cx="35" cy="70" r="4" fill="#FDE047" opacity="0.28"/>
+    <circle cx="75" cy="70" r="4" fill="#FDE047" opacity="0.28"/>
+    <!-- 圆润机身 -->
+    <path d="M38 93 Q55 107 72 93 L75 97 Q55 111 35 97 Z" fill="url(#petGrad)" stroke="url(#petGold)" stroke-width="1.5"/>
+    <!-- 胸前能量核心（金色） -->
+    <circle cx="55" cy="100" r="4.5" fill="#FDE047" filter="url(#petGlow)">
       <animate attributeName="r" values="3.5;5;3.5" dur="1.2s" repeatCount="indefinite"/>
     </circle>
-    <!-- 两侧肩甲 -->
-    <path d="M 22 55 L 18 70 L 12 65 Z" fill="url(#petGold)" opacity="0.5"/>
-    <path d="M 88 55 L 92 70 L 98 65 Z" fill="url(#petGold)" opacity="0.5"/>
     <!-- 粒子尾迹 -->
     <circle cx="40" cy="95" r="1.5" fill="#22d3ee" opacity="0.6">
       <animate attributeName="cy" values="95;105;95" dur="2s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="55" cy="95" r="1.5" fill="#FDE047" opacity="0.6">
-      <animate attributeName="cy" values="95;108;95" dur="2s" begin="0.4s" repeatCount="indefinite"/>
+    <circle cx="70" cy="95" r="1.5" fill="#FDE047" opacity="0.6">
+      <animate attributeName="cy" values="95;103;95" dur="2s" begin="0.4s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" begin="0.4s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="70" cy="95" r="1.5" fill="#22d3ee" opacity="0.6">
-      <animate attributeName="cy" values="95;103;95" dur="2s" begin="0.8s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" begin="0.8s" repeatCount="indefinite"/>
-    </circle>
   </svg>
+
 </div>
 
 <div id="petPanel">
   <div class="pet-panel-head">
-    <div class="mini-avatar">🤖</div>
+    <div class="mini-avatar">😊</div>
     <strong>Supply 顾问</strong>
     <span>AI在线</span>
     <button id="petVoiceBtn" onclick="togglePetVoice()" title="语音播报开关" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:999px;color:#fff;font-size:11px;cursor:pointer;padding:3px 10px;margin-left:6px;">🔊 语音</button>
@@ -1327,7 +1316,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
     <button onclick="togglePetPanel()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;margin-left:4px;">✕</button>
   </div>
   <div id="petChat">
-    <div class="bubble ai">👋 你好！我是 Supply 顾问 🤖<br>拖着我放到任何位置，随时点我聊天～<br>试试问我："帮我生成采购建议"</div>
+    <div class="bubble ai">👋 你好！我是 Supply 顾问 😊<br>拖着我放到任何位置，随时点我聊天～<br>试试问我："帮我生成采购建议"</div>
   </div>
   <div class="pet-quick">
     <button onclick="petAsk('帮我生成采购建议')">📋 采购建议</button>
@@ -1494,10 +1483,10 @@ function togglePetPanel() {
 function petMood(mood) {
   const m = document.getElementById('petMouth');
   if (!m) return;
-  if (mood === 'happy') { m.setAttribute('width','26'); m.setAttribute('height','4'); m.setAttribute('rx','2'); }
-  else if (mood === 'o') { m.setAttribute('width','10'); m.setAttribute('height','8'); m.setAttribute('rx','4'); }
-  else if (mood === 'flat') { m.setAttribute('width','22'); m.setAttribute('height','2'); m.setAttribute('rx','1'); }
-  else { m.setAttribute('width','22'); m.setAttribute('height','3'); m.setAttribute('rx','1.5'); }
+  if (mood === 'happy') { m.setAttribute('d','M40 77 Q55 89 70 77'); m.setAttribute('stroke','#FDE047'); }
+  else if (mood === 'o') { m.setAttribute('d','M50 72 Q55 65 60 72 Q55 79 50 72 Z'); m.setAttribute('stroke','#fff'); }
+  else if (mood === 'flat') { m.setAttribute('d','M46 79 Q55 79 64 79'); m.setAttribute('stroke','#fff'); }
+  else { m.setAttribute('d','M45 76 Q55 85 65 76'); m.setAttribute('stroke','#FDE047'); }
 }
 function petAsk(q) {
   const chat = document.getElementById('petChat');
@@ -1826,5 +1815,24 @@ petAsk = async function(q) {
 }
 
 </script>
+
+
+<script>
+(function(){
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function tick(){
+    const el = document.getElementById('liveClock');
+    if (!el) return;
+    const now = new Date();
+    const week = ['日','一','二','三','四','五','六'][now.getDay()];
+    el.textContent = '📅 ' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
+      + ' · ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds())
+      + ' 周' + week;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
 </body>
 </html>
