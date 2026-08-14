@@ -182,6 +182,28 @@ body{font-family:var(--font);color:var(--ink);background:linear-gradient(180deg,
 .ext-daily .d b{display:block;font-size:10px;color:#334155;font-weight:600;line-height:1.4;}
 .ext-fc{font-size:11px;color:#1d4ed8;background:#eff6ff;border:1px solid #dbeafe;border-radius:8px;padding:6px 8px;margin-top:6px;line-height:1.5;}
 
+/* 2026-08-14 新增：配套原材料卡（可下拉展开 4 个 A 级最紧物料） */
+.rm-card{padding:0;overflow:hidden;}
+.rm-details{margin:0;}
+.rm-details > summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:8px;user-select:none;}
+.rm-details > summary::-webkit-details-marker{display:none;}
+.rm-icon{font-size:18px;line-height:1;}
+.rm-hd .rm-name{font-size:13px;font-weight:600;color:#1e293b;flex-shrink:0;}
+.rm-meta{font-size:11px;color:#64748b;margin-left:auto;}
+.rm-arrow{font-size:10px;color:#94a3b8;transition:transform 0.25s ease;}
+.rm-details[open] .rm-arrow{transform:rotate(180deg);}
+.rm-hint{font-size:10px;color:#94a3b8;padding:6px 16px 4px;border-top:1px dashed #e5e7eb;background:#f8fafc;}
+.rm-body{padding:8px 16px 14px;max-height:280px;overflow-y:auto;}
+.rm-row{padding:8px 0;border-bottom:1px solid #f1f5f9;}
+.rm-row:last-child{border-bottom:none;}
+.rm-r1{display:flex;align-items:center;gap:6px;font-size:11px;}
+.rm-code{background:#1e3a8a;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
+.rm-row .rm-name{font-size:11px;color:#334155;font-weight:600;}
+.rm-status{margin-left:auto;font-size:11px;}
+.rm-r2{font-size:10px;color:#64748b;margin-top:3px;padding-left:2px;}
+.rm-r2 b{color:#dc2626;font-weight:700;}
+.rm-empty{font-size:11px;color:#94a3b8;text-align:center;padding:14px 0;}
+
 /* AI能力矩阵 */
 .ai-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 @media(max-width:1000px){.ai-matrix{grid-template-columns:1fr 1fr;}}
@@ -336,7 +358,7 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       <div class="sub">功能化学品供应保障与库存健康智能决策平台 · 数据驱动 · AI 赋能</div>
     </div>
   </div>
-  <div class="clock" id="liveClock">📅 2026-08-14 · 09:54</div>
+  <div class="clock" id="liveClock">📅 2026-08-14 · 10:18</div>
   <div class="ai-status">系统正常</div>
 </header>
 
@@ -1229,21 +1251,92 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
   <div class="ext-meta"><span>📈 窄幅上行</span><span style="color:#6b7280;">8/14生意社基准价·持平·月内+5.58%·同比+8.83%·上海大厂限量供应</span></div>
   <div class="ext-fc">🔮 大厂限量供应，预计 1.75-1.79 万元窄幅上行</div>
 </div>
-<div class="ext-card">
-  <div class="ext-hd"><span class="ext-name">LLDPE(PE)</span><span class="ext-chg up">+11.40%</span></div>
-  <div class="ext-price"><strong>8275.00</strong><span>元/吨</span></div>
-  <div class="ext-chart"><svg class="ext-svg" viewBox="0 0 360 预警状态" preserveAspectRatio="none"><path d="M 6.0,98.0 L 6.0,98.0 L 44.7,98.0 L 83.3,90.0 L 122.0,82.0 L 160.7,41.8 L 199.3,41.8 L 238.0,41.8 L 238.0,98.0 Z" fill="rgba(220,38,38,0.10)" stroke="none"/><path d="M 6.0,98.0 L 44.7,98.0 L 83.3,90.0 L 122.0,82.0 L 160.7,41.8 L 199.3,41.8 L 238.0,41.8" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/><path d="M 238.0,41.8 L 276.7,34.8 L 315.3,25.4 L 354.0,16.0" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/><text x="6.0" y="92.0" font-size="8.5" fill="#dc2626" text-anchor="start" font-weight="600">8158</text><text x="44.7" y="92.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8158</text><text x="83.3" y="84.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8175</text><text x="122.0" y="76.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8192</text><text x="160.7" y="35.8" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8275</text><text x="199.3" y="35.8" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8275</text><text x="238.0" y="35.8" font-size="8.5" fill="#dc2626" text-anchor="end" font-weight="600">8275</text><text x="6.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="start">8/6</text><text x="44.7" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/7</text><text x="83.3" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/10</text><text x="122.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/11</text><text x="160.7" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/12</text><text x="199.3" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/13</text><text x="238.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="end">8/14</text></svg></div>
-  <div class="ext-daily"><div class="d"><span>8/6</span><b>8158</b></div><div class="d"><span>8/7</span><b>8158</b></div><div class="d"><span>8/10</span><b>8175</b></div><div class="d"><span>8/11</span><b>8192</b></div><div class="d"><span>8/12</span><b>8275</b></div><div class="d"><span>8/13</span><b>8275</b></div><div class="d"><span>8/14</span><b>8275</b></div></div>
-  <div class="ext-meta"><span>📈 温和上行</span><span style="color:#6b7280;">8/13生意社基准价·持平·同比+11.40%·万华LLDPE出厂8500</span></div>
-  <div class="ext-fc">🔮 下游补库驱动，预计 8200-8400 元温和上行</div>
+<div class="ext-card rm-card">
+  <details class="rm-details">
+    <summary class="rm-hd">
+      <span class="rm-icon">🧪</span>
+      <span class="rm-name">环氧乙烷 EO</span>
+      <span class="rm-meta">4 种 A 级物料 · 库存 221</span>
+      <span class="rm-arrow">▼</span>
+    </summary>
+    <div class="rm-hint">EO 加成物原料 · 覆盖非离子/AES 表活</div>
+    <div class="rm-body"><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT037</span><span class="rm-name">LAE-9</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 67 kg · 可用 <b>10.2</b> 天 · 浙江皇马尚宜新材料有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT013</span><span class="rm-name">脂肪醇聚醚YA-45</span><span class="rm-status">🟡</span></div>
+        <div class="rm-r2">库存 56 kg · 可用 <b>12.4</b> 天 · 江苏钟山新材料有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT038</span><span class="rm-name">仲磺基磺酸钠E30</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 51 kg · 可用 <b>13.1</b> 天 · 赞宇科技集团股份有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT014</span><span class="rm-name">L001</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 47 kg · 可用 <b>15.0</b> 天 · 赞宇科技集团股份有限公司</div>
+      </div></div>
+  </details>
 </div>
-<div class="ext-card">
-  <div class="ext-hd"><span class="ext-name">PP(拉丝)</span><span class="ext-chg up">+24.10%</span></div>
-  <div class="ext-price"><strong>8993.33</strong><span>元/吨</span></div>
-  <div class="ext-chart"><svg class="ext-svg" viewBox="0 0 360 预警状态" preserveAspectRatio="none"><path d="M 6.0,98.0 L 6.0,66.7 L 44.7,98.0 L 83.3,79.0 L 122.0,39.9 L 160.7,31.0 L 199.3,36.5 L 238.0,36.5 L 238.0,98.0 Z" fill="rgba(220,38,38,0.10)" stroke="none"/><path d="M 6.0,66.7 L 44.7,98.0 L 83.3,79.0 L 122.0,39.9 L 160.7,31.0 L 199.3,36.5 L 238.0,36.5" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/><path d="M 238.0,36.5 L 276.7,30.9 L 315.3,23.5 L 354.0,16.0" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/><text x="6.0" y="60.7" font-size="8.5" fill="#dc2626" text-anchor="start" font-weight="600">8903</text><text x="44.7" y="92.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8810</text><text x="83.3" y="73.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8867</text><text x="122.0" y="33.9" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8983</text><text x="160.7" y="25.0" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">9010</text><text x="199.3" y="30.5" font-size="8.5" fill="#dc2626" text-anchor="middle" font-weight="600">8993</text><text x="238.0" y="30.5" font-size="8.5" fill="#dc2626" text-anchor="end" font-weight="600">8993</text><text x="6.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="start">8/6</text><text x="44.7" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/7</text><text x="83.3" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/10</text><text x="122.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/11</text><text x="160.7" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/12</text><text x="199.3" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="middle">8/13</text><text x="238.0" y="114.0" font-size="8.5" fill="#94a3b8" text-anchor="end">8/14</text></svg></div>
-  <div class="ext-daily"><div class="d"><span>8/6</span><b>8903</b></div><div class="d"><span>8/7</span><b>8810</b></div><div class="d"><span>8/10</span><b>8867</b></div><div class="d"><span>8/11</span><b>8983</b></div><div class="d"><span>8/12</span><b>9010</b></div><div class="d"><span>8/13</span><b>8993</b></div><div class="d"><span>8/14</span><b>8993</b></div></div>
-  <div class="ext-meta"><span>📈 高位整理</span><span style="color:#6b7280;">8/13生意社基准价·-0.19%·同比+24.10%·南京拉丝现货9000-9050</span></div>
-  <div class="ext-fc">🔮 成本支撑+需求回暖，预计 8900-9150 元偏强运行</div>
+<div class="ext-card rm-card">
+  <details class="rm-details">
+    <summary class="rm-hd">
+      <span class="rm-icon">⛓️</span>
+      <span class="rm-name">环氧丙烷 PO</span>
+      <span class="rm-meta">3 种 A 级物料 · 库存 149</span>
+      <span class="rm-arrow">▼</span>
+    </summary>
+    <div class="rm-hint">聚醚多元醇核心单体</div>
+    <div class="rm-body"><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT029</span><span class="rm-name">聚醚PAG220</span><span class="rm-status">🔴</span></div>
+        <div class="rm-r2">库存 38 kg · 可用 <b>8.6</b> 天 · 江苏利宏科技发展有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT017</span><span class="rm-name">XL-40</span><span class="rm-status">🟡</span></div>
+        <div class="rm-r2">库存 60 kg · 可用 <b>10.2</b> 天 · 万华化学</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT005</span><span class="rm-name">聚醚多元醇</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 51 kg · 可用 <b>34.0</b> 天 · 上海特漾实业有限公司</div>
+      </div></div>
+  </details>
+</div>
+<div class="ext-card rm-card">
+  <details class="rm-details">
+    <summary class="rm-hd">
+      <span class="rm-icon">🧬</span>
+      <span class="rm-name">有机硅单体 DMC</span>
+      <span class="rm-meta">3 种 A 级物料 · 库存 138</span>
+      <span class="rm-arrow">▼</span>
+    </summary>
+    <div class="rm-hint">硅氧烷聚合基础原料</div>
+    <div class="rm-body"><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT030</span><span class="rm-name">HXP-201</span><span class="rm-status">🔴</span></div>
+        <div class="rm-r2">库存 37 kg · 可用 <b>7.3</b> 天 · 浙江润禾有机硅新材料有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT018</span><span class="rm-name">硅油乳液</span><span class="rm-status">🟡</span></div>
+        <div class="rm-r2">库存 58 kg · 可用 <b>7.6</b> 天 · 浙江润禾有机硅新材料有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT006</span><span class="rm-name">P005</span><span class="rm-status">🟡</span></div>
+        <div class="rm-r2">库存 44 kg · 可用 <b>8.5</b> 天 · 杭州崇耀科技发展有限公司</div>
+      </div></div>
+  </details>
+</div>
+<div class="ext-card rm-card">
+  <details class="rm-details">
+    <summary class="rm-hd">
+      <span class="rm-icon">💧</span>
+      <span class="rm-name">丙烯酸丁酯</span>
+      <span class="rm-meta">3 种 A 级物料 · 库存 241</span>
+      <span class="rm-arrow">▼</span>
+    </summary>
+    <div class="rm-hint">丙烯酸类乳液 / 水性涂料原料</div>
+    <div class="rm-body"><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT019</span><span class="rm-name">E003</span><span class="rm-status">🔴</span></div>
+        <div class="rm-r2">库存 16 kg · 可用 <b>7.2</b> 天 · 江苏联泓科技有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT007</span><span class="rm-name">E012</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 58 kg · 可用 <b>14.4</b> 天 · 江苏联泓科技有限公司</div>
+      </div><div class="rm-row">
+        <div class="rm-r1"><span class="rm-code">MAT031</span><span class="rm-name">E016</span><span class="rm-status">🟢</span></div>
+        <div class="rm-r2">库存 166 kg · 可用 <b>15.5</b> 天 · 江苏联泓科技有限公司</div>
+      </div></div>
+  </details>
 </div></div>
   <div style="font-size:12px;color:#64748b;margin-top:12px;">📰 宏观研判：8/14原油大跌结束连涨：布油收87.07美元(-2.15%)、WTI 81.25美元(-2.4%)，主因EIA库存单周+1740万桶创3年半最大增幅、OPEC/IEA双双下调2026需求预测，但霍尔木兹海峡局势反复（美伊各称控制）+胡塞袭击沙特吉赞炼厂仍构成底部支撑；化工品走势分化：聚合MDI 18066持平高位（万华烟台110万吨装置检修45天供应收紧）、TDI 17666持平月内+5.58%、LLDPE 8275持平、PP微跌至8993。外部因素仅作决策修正，内部库存数据主导判断。</div>
 </section>
@@ -1267,13 +1360,13 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 4px;border-
       <div class="fusion-col">
         <h4>🌐 外部市场信号 <span style="font-size:10px;color:#94a3b8;">(2026-08-14)</span></h4>
         <ul>
-          <li>布伦特原油 87.07 USD/桶（▼-2.15%）</li><li>WTI 原油 81.25 USD/桶（▼-2.40%）</li><li>聚合MDI 18066.67 元/吨（▲+14.35%）</li><li>TDI 17666.67 元/吨（▲+5.58%）</li><li>LLDPE(PE) 8275.00 元/吨（▲+11.40%）</li>
+          <li>布伦特原油 87.07 USD/桶（▼-2.15%）</li><li>WTI 原油 81.25 USD/桶（▼-2.40%）</li><li>聚合MDI 18066.67 元/吨（▲+14.35%）</li><li>TDI 17666.67 元/吨（▲+5.58%）</li>
         </ul>
       </div>
     </div>
     <div class="fusion-action">
       <h4>🎯 内外融合建议</h4>
-      <p>外部原油/化工品普涨（数据日期 2026-08-14：布油 87.07 美元、聚合MDI 18066.67 元/吨、PP 8993.33 元/吨），叠加国内化工品价差走阔，原料成本传导压力上升。<strong>建议优先安排 3 种紧急物料补货（E002 等）</strong>，同时对 86 种低安全线物料<strong>提前锁价</strong>；针对 41 项到货异常供应商，<strong>立即核查交付能力并启动备选机制</strong>。综合判断：本周采购<strong>重点关注成本管控而非追求低价</strong>，对未来 30 天内的化工原料采购建议采取"分批锁价 + 锁定长约"的稳健策略。</p>
+      <p>外部原油/化工品普涨（数据日期 2026-08-14：布油 87.07 美元、聚合MDI 18066.67 元/吨、TDI 17666.67 元/吨），叠加国内化工品价差走阔，原料成本传导压力上升。<strong>建议优先安排 3 种紧急物料补货（E002 等）</strong>，同时对 86 种低安全线物料<strong>提前锁价</strong>；针对 41 项到货异常供应商，<strong>立即核查交付能力并启动备选机制</strong>。综合判断：本周采购<strong>重点关注成本管控而非追求低价</strong>，对未来 30 天内的化工原料采购建议采取"分批锁价 + 锁定长约"的稳健策略。</p>
     </div>
   </div>
 </section>
