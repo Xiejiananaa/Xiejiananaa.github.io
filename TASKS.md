@@ -205,6 +205,8 @@
 - [x] 首次推送 `main` 分支
 - [x] GitHub Actions 自动部署成功
 - [x] 线上页面与脱敏 JSON 加载验证
+- [x] README 同步完整运行流程与故障排查
+- [x] 行业供需和供应商动态接入 WorkBuddy 行情摘要
 - [x] Cloudflare Worker Basic Auth 与构建配置完成
 - [ ] Cloudflare 内部版绑定自定义域名并恢复自动构建
 

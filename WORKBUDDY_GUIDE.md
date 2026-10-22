@@ -85,6 +85,8 @@ data\external_market.json
 5. 抓取失败时最多重试 3 次；不要写入伪造价格。
 6. 如已有旧文件，抓取失败时保留旧文件并在日志中记录失败，不要清空。
 7. 写入完成后先验证 JSON 可以解析。
+8. `category`、`date`、`source`、`url`、`summary` 会被行业供需和资讯板块直接读取，尽量填写完整。
+9. `change_pct` 没有可靠数据时使用 `null`，不要补造成 `0`。
 
 ```powershell
 & $PY -m json.tool data\external_market.json > $null
