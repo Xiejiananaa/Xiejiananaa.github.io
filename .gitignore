@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.xlsx
+*.xls
+.env
+data/internal/
+*.tmp
+logs/
+data/.last_good/
+data/previous_dashboard_data.json
+
+# Generated/public release artifacts are rebuilt by GitHub Actions
+dist/
+
+# Local design and old-version working files
+design/
+design-export/
+preview/
+index_original.html
+竞品借鉴分析.md
+页面改造方案.md

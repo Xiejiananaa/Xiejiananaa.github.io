@@ -1,0 +1,72 @@
+name: Validate and deploy supply radar
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "data/dashboard_data.json"
+      - "data/external_market.json"
+      - "assets/**"
+      - "index.html"
+      - "scripts/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate public dashboard JSON
+        run: python scripts/validate_dashboard_data.py --mode competition --input data/dashboard_data.json
+
+      - name: Build offline share page
+        run: python scripts/build_share_html.py
+
+      - name: Prepare public Pages artifact
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site/data _site/assets _site/dist
+          cp index.html _site/index.html
+          cp .nojekyll _site/.nojekyll
+          cp -R assets/. _site/assets/
+          cp data/dashboard_data.json _site/data/dashboard_data.json
+          cp "dist/供应雷达-分享讨论版.html" "_site/dist/供应雷达-分享讨论版.html"
+          find _site -maxdepth 3 -type f -print | sort
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
