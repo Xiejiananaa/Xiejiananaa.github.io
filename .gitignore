@@ -19,3 +19,5 @@ preview/
 index_original.html
 竞品借鉴分析.md
 页面改造方案.md
+_site/
+.wrangler/

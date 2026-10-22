@@ -6,6 +6,24 @@
 - GitHub 仓库：https://github.com/Xiejiananaa/Xiejiananaa.github.io
 - 自动部署：`.github/workflows/deploy-pages.yml`
 
+## Cloudflare 密码保护
+
+Cloudflare Worker 使用 Basic Auth 保护整站，包括 `dashboard_data.json`。
+
+```text
+用户名：supply
+密码：由 Cloudflare Secret 中的 SITE_PASSWORD 提供
+```
+
+构建流程：
+
+```powershell
+node scripts/build_cloudflare_site.mjs
+npx wrangler deploy
+```
+
+Workers 配置见 `wrangler.jsonc`，访问控制代码见 `worker/index.js`。
+
 ## 页面初版
 
 - 暗色 SaaS 风格固定左侧手风琴导航：今日指挥中心、物料供需与保供、供应商与仓储、生产协同与动态沙盘、行业情报与市场洞察、AI智能协同

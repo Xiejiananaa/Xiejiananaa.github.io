@@ -8,3 +8,5 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 *.bat text eol=crlf
+*.mjs text eol=lf
+*.jsonc text eol=lf
