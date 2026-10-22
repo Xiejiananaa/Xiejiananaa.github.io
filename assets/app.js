@@ -1390,18 +1390,49 @@ function renderAgingChart() {
 }
 
 
+function hasMarketChange(change) {
+  return change !== null && change !== undefined && change !== '' && Number.isFinite(Number(change));
+}
+
+function marketDirection(change) {
+  if (!hasMarketChange(change)) return { label: '未标注', cls: 'neutral' };
+  const value = Number(change);
+  if (value > 0) return { label: '上涨', cls: 'up' };
+  if (value < 0) return { label: '回落', cls: 'down' };
+  return { label: '持稳', cls: 'flat' };
+}
+
+function marketChangeText(change) {
+  if (!hasMarketChange(change)) return '涨跌未标注';
+  const value = Number(change);
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
+function marketPriceText(item) {
+  if (item.price == null) return '—';
+  return `${num(item.price, Number.isInteger(item.price) ? 0 : 2)}${item.unit ? ' ' + esc(item.unit) : ''}`;
+}
+
+function safeMarketUrl(value) {
+  const text = String(value || '').trim();
+  return /^https?:\/\//i.test(text) ? text : '';
+}
+
 function renderIntelligence() {
   const d = state.data;
   const market = d.supply.external_market;
+  const marketItems = Array.isArray(market.items) ? market.items : [];
   $('#marketStatus').textContent = market.available ? 'WorkBuddy 已接入' : '等待 WorkBuddy 接入';
   $('#marketStatus').className = 'status-pill ' + (market.available ? 'live' : 'subtle');
-  if (market.available && market.items.length) {
-    const items = (market.summary?.top_movers?.length ? market.summary.top_movers : market.items).slice(0, 6);
+
+  if (market.available && marketItems.length) {
+    const items = (market.summary?.top_movers?.length ? market.summary.top_movers : marketItems).slice(0, 6);
     $('#marketPanel').innerHTML = `
       <div class="panel-head"><div><span class="eyebrow">External market</span><h3>行情快照</h3></div><span class="panel-note">${esc(market.updated_at || '日期待同步')}</span></div>
-      <div class="market-grid">${items.map(item => `
-        <div class="market-card"><span>${esc(item.name)}</span><strong>${item.price == null ? '—' : num(item.price, 2)}</strong><em class="${(item.change_pct || 0) < 0 ? 'down' : ''}">${item.change_pct == null ? '—' : (item.change_pct > 0 ? '+' : '') + item.change_pct.toFixed(1) + '%'} ${esc(item.unit || '')}</em></div>
-      `).join('')}</div>
+      <div class="market-grid">${items.map(item => {
+        const direction = marketDirection(item.change_pct);
+        return `<div class="market-card"><span>${esc(item.name)} · ${esc(item.category || '未分类')}</span><strong>${marketPriceText(item)}</strong><em class="${direction.cls}">${direction.label} ${marketChangeText(item.change_pct)}</em></div>`;
+      }).join('')}</div>
       <p class="side-note">数据来源：WorkBuddy 写入的 external_market.json。页面只展示，不在此处改写行情。</p>
     `;
   } else {
@@ -1432,10 +1463,32 @@ function renderIntelligence() {
     <div class="prov-row"><b>依据</b>供应风险表 ${d.supply.materials.length} 行 + PO 台账 ${d.supply.purchase_orders.items.length} 张 + MB51 收货记录<span class="prov-sep"></span><span class="prov-tag">外部行情：${market.available ? '已接入' : '未接入'}</span><span class="prov-sep"></span><span>置信度 中 · 生成于 ${esc(d.meta.generated_at || d.meta.as_of || '')}</span></div>
   `;
 
-  $('#newsPanel').innerHTML = `
-    <div class="panel-head"><div><span class="eyebrow">Intelligence feed</span><h3>行业情报</h3></div><span class="panel-note">由 WorkBuddy 每日更新</span></div>
-    <div class="empty-state">当前没有可展示的情报条目。WorkBuddy 接入后可在这里显示利好、中性、利空标签与原文链接。</div>
-  `;
+  if (market.available && marketItems.length) {
+    const newsItems = marketItems
+      .filter(item => item.summary || item.source || item.url)
+      .slice()
+      .sort((a, b) => Math.abs(Number(b.change_pct) || 0) - Math.abs(Number(a.change_pct) || 0))
+      .slice(0, 8);
+    const newsHtml = newsItems.map(item => {
+      const direction = marketDirection(item.change_pct);
+      const url = safeMarketUrl(item.url);
+      return `<article class="news-item">
+        <div class="news-item-head"><strong>${esc(item.name)}</strong><span class="market-direction ${direction.cls}">${direction.label}</span></div>
+        <p>${esc(item.summary || 'WorkBuddy 已获取该品种行情，暂未提供摘要。')}</p>
+        <div class="news-meta"><span>${esc(item.category || '未分类')} · ${esc(item.source || '来源待补')} · ${esc(item.date || '')}</span>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">原文 ↗</a>` : ''}</div>
+      </article>`;
+    }).join('');
+    $('#newsPanel').innerHTML = `
+      <div class="panel-head"><div><span class="eyebrow">Intelligence feed</span><h3>行业情报 · 公开资讯</h3></div><span class="panel-note">${newsItems.length} / ${marketItems.length} 条 · WorkBuddy 每日更新</span></div>
+      <p class="side-note news-source-note">当前 WorkBuddy 提供的是原料行情与公开资讯摘要，暂未提供供应商个体新闻。以下按涨跌幅度展示重点条目。</p>
+      <div class="news-grid">${newsHtml}</div>
+    `;
+  } else {
+    $('#newsPanel').innerHTML = `
+      <div class="panel-head"><div><span class="eyebrow">Intelligence feed</span><h3>行业情报</h3></div><span class="panel-note">由 WorkBuddy 每日更新</span></div>
+      <div class="empty-state">当前没有可展示的情报条目。WorkBuddy 接入后可在这里显示行情摘要、来源和原文链接。</div>
+    `;
+  }
 }
 
 function renderMethod() {
@@ -2051,9 +2104,46 @@ function renderProduction() {
 function renderIntelExtras() {
   if (!$('#industryPanel')) return;
   const market = state.data.supply.external_market;
-  $('#industryPanel').innerHTML = market.available
-    ? `<div class="panel-head"><div><span class="eyebrow">Industry supply</span><h3>行业供需信号</h3></div><span class="badge green">WorkBuddy 已接入</span></div><p class="intel-copy">当前行情条目 ${market.items.length} 个，强上涨 ${market.summary.strong_rising_count} 个，价格压力比例 ${pct((market.summary.pressure_ratio || 0) * 100)}。</p>`
-    : '<div class="empty-state">WorkBuddy 尚未写入行业供需数据。接入后将在这里展示行业景气、供需缺口和价格压力。</div>';
+  const items = Array.isArray(market.items) ? market.items : [];
+  if (market.available && items.length) {
+    const categoryMap = new Map();
+    items.forEach(item => {
+      const name = item.category || '未分类';
+      const entry = categoryMap.get(name) || { name, count: 0, changes: [] };
+      entry.count += 1;
+      if (hasMarketChange(item.change_pct)) entry.changes.push(Number(item.change_pct));
+      categoryMap.set(name, entry);
+    });
+    const categories = [...categoryMap.values()]
+      .map(entry => ({
+        ...entry,
+        avg: entry.changes.length ? entry.changes.reduce((sum, value) => sum + value, 0) / entry.changes.length : null,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
+    const maxCategoryCount = Math.max(...categories.map(entry => entry.count), 1);
+    const signals = (market.summary?.top_movers?.length ? market.summary.top_movers : items).slice(0, 8);
+    $('#industryPanel').innerHTML = `
+      <div class="panel-head"><div><span class="eyebrow">Industry supply</span><h3>行业供需信号</h3></div><span class="badge green">WorkBuddy 已接入</span></div>
+      <p class="intel-copy">当前行情条目 ${items.length} 个，覆盖 ${categories.length} 个品类；上涨 ${market.summary.rising_count || 0} 个、回落 ${market.summary.falling_count || 0} 个，平均涨跌幅 ${marketChangeText(market.summary.avg_change_pct)}，价格压力比例 ${pct((market.summary.pressure_ratio || 0) * 100)}。</p>
+      <p class="side-note">本轮数据以公开原料价格和资讯为主，未包含行业产量、库存缺口字段，因此这里不虚构供需缺口，只展示可核实的品类结构与价格方向。</p>
+      <div class="industry-kpis">
+        <div class="industry-kpi"><span>覆盖品类</span><strong>${categories.length}</strong></div>
+        <div class="industry-kpi"><span>有涨跌样本</span><strong>${market.summary.with_change_count || 0}</strong></div>
+        <div class="industry-kpi"><span>上涨 / 回落</span><strong>${market.summary.rising_count || 0} / ${market.summary.falling_count || 0}</strong></div>
+        <div class="industry-kpi"><span>平均涨跌幅</span><strong class="${(market.summary.avg_change_pct || 0) > 0 ? 'up' : (market.summary.avg_change_pct || 0) < 0 ? 'down' : ''}">${marketChangeText(market.summary.avg_change_pct)}</strong></div>
+      </div>
+      <div class="industry-category-grid">${categories.map(entry => {
+        const width = Math.max(12, Math.round(entry.count / maxCategoryCount * 100));
+        return `<div class="industry-category-card"><div class="industry-category-head"><strong>${esc(entry.name)}</strong><span>${entry.count} 项</span></div><div class="industry-category-bar"><i style="width:${width}%"></i></div><div class="industry-category-meta"><span>${entry.changes.length ? '有涨跌 ' + entry.changes.length + ' 项' : '暂无涨跌'}</span><b class="${(entry.avg || 0) > 0 ? 'up' : (entry.avg || 0) < 0 ? 'down' : ''}">${entry.avg == null ? '—' : marketChangeText(entry.avg)}</b></div></div>`;
+      }).join('')}</div>
+      <div class="industry-signal-list">${signals.map(item => {
+        const direction = marketDirection(item.change_pct);
+        return `<div class="industry-signal-row"><div class="industry-signal-name"><strong>${esc(item.name)}</strong><span>${esc(item.category || '未分类')}</span></div><div class="industry-signal-price"><b>${marketPriceText(item)}</b><em class="${direction.cls}">${direction.label} ${marketChangeText(item.change_pct)}</em></div><p>${esc(item.summary || '暂无进一步摘要')}</p></div>`;
+      }).join('')}</div>
+    `;
+  } else {
+    $('#industryPanel').innerHTML = '<div class="empty-state">WorkBuddy 尚未写入行业供需数据。接入后将在这里展示行业景气、供需缺口和价格压力。</div>';
+  }
   const risk = state.data.supply.materials.filter(m => tierOf(m) === 't1' || tierOf(m) === 't2').slice(0, 6);
   $('#policyPanel').innerHTML = `
     <div class="panel-head"><div><span class="eyebrow">Policy & supply risk</span><h3>供应风险提示</h3></div><span class="panel-note">内部信号</span></div>
