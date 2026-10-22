@@ -28,9 +28,9 @@ def main() -> int:
     geo = json.loads(GEO.read_text(encoding="utf-8"))
     data = json.loads(DATA.read_text(encoding="utf-8"))
 
-    html = re.sub(r'<link rel="stylesheet" href="\./assets/styles\.css">', f"<style>\n{css}\n</style>", html)
-    html = re.sub(r'<script src="\./assets/echarts\.min\.js" defer></script>\s*', "", html)
-    html = re.sub(r'<script src="\./assets/app\.js" defer></script>\s*', "", html)
+    html = re.sub(r'<link rel="stylesheet" href="\./assets/styles\.css(?:\?[^"]*)?">', f"<style>\n{css}\n</style>", html)
+    html = re.sub(r'<script src="\./assets/echarts\.min\.js(?:\?[^"]*)?" defer></script>\s*', "", html)
+    html = re.sub(r'<script src="\./assets/app\.js(?:\?[^"]*)?" defer></script>\s*', "", html)
     html = html.replace("<title>供应雷达 · 供应链决策工作台</title>", "<title>供应雷达 · 分享讨论版</title>")
     html = html.replace("</head>", '  <meta name="robots" content="noindex,nofollow">\n</head>')
 
