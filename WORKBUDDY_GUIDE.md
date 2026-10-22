@@ -203,7 +203,17 @@ git push origin main
 
 连续 3 次失败后停止，不强制推送，不覆盖远端提交。
 
-## 7. GitHub Pages 自动部署
+## 7. 比赛演示入口
+
+不需要在评委面前打开 PowerShell。直接打开：
+
+```text
+https://xiejiananaa.github.io/?route=ai/workbuddy
+```
+
+该页面展示 WorkBuddy 的最近运行时间、SAP 抓取链路、JSON 编译、安全校验、GitHub Actions 和发布证据。
+
+## 8. GitHub Pages 自动部署
 
 工作流文件：
 
@@ -237,7 +247,7 @@ dist/供应雷达-分享讨论版.html
 
 不得把 `data/internal/`、Excel、日志或密钥放入发布目录。
 
-## 8. 单文件分享版
+## 9. 单文件分享版
 
 日常自动更新不需要提交 `dist` 目录，避免每天提交约 2 MB 的 HTML。
 
@@ -255,7 +265,7 @@ dist\供应雷达-分享讨论版.html
 
 单文件版内嵌同一份 `data/dashboard_data.json`，可双击打开，也可以打包成 ZIP 分享。
 
-## 9. 内部版规则
+## 10. 内部版规则
 
 内部版只在受控本地目录使用：
 
@@ -271,7 +281,7 @@ dist\供应雷达-分享讨论版.html
 - 不得生成公开分享 HTML。
 - 不得被 WorkBuddy 的公开发布任务自动覆盖。
 
-## 10. 失败重试和停止条件
+## 11. 失败重试和停止条件
 
 ### 可以重试
 
@@ -290,7 +300,7 @@ dist\供应雷达-分享讨论版.html
 
 停止时保留上一版可用 JSON，发送失败通知，不执行强制推送。
 
-## 11. 无提交演练
+## 12. 无提交演练
 
 首次启用前执行：
 

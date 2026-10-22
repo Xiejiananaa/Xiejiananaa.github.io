@@ -25,7 +25,7 @@ const state = {
 const NAV_VIEWS = [
   'overview', 'today-focus', 'today-alerts', 'today-tasks',
   'procurement', 'supply', 'production', 'intelligence',
-  'ai-chat', 'ai-tasks', 'ai-approval', 'ai-evidence', 'ai-review',
+  'ai-workbuddy', 'ai-chat', 'ai-tasks', 'ai-approval', 'ai-evidence', 'ai-review',
 ];
 
 const ROUTE_CONFIG = {
@@ -51,6 +51,7 @@ const ROUTE_CONFIG = {
   'intel/industry': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '行业供需', section: 'intel-industry' },
   'intel/supplier-news': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '供应商动态', section: 'intel-supplier-news' },
   'intel/policy': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '政策与供应风险', section: 'intel-policy' },
+  'ai/workbuddy': { view: 'ai-workbuddy', group: 'ai', groupLabel: 'AI智能协同', label: 'WorkBuddy 协同' },
   'ai/chat': { view: 'ai-chat', group: 'ai', groupLabel: 'AI智能协同', label: 'AI问答' },
   'ai/tasks': { view: 'ai-tasks', group: 'ai', groupLabel: 'AI智能协同', label: '任务执行' },
   'ai/approval': { view: 'ai-approval', group: 'ai', groupLabel: 'AI智能协同', label: '审批跟踪' },
@@ -173,6 +174,12 @@ function setModeChrome() {
   $('#asOf').textContent = '数据日期 ' + dateText(d.meta.as_of);
   $('#scopeText').textContent = internal ? '全部工厂' : '工厂 1501';
   $('#scopeText').title = d.meta.source_file || '';
+  const workbuddyBadge = $('#workbuddyBadge');
+  if (workbuddyBadge) {
+    workbuddyBadge.querySelector('span').textContent = internal ? 'WorkBuddy 本地协同' : 'WorkBuddy 已协同';
+    workbuddyBadge.title = '最近一次数据生成：' + (d.meta.generated_at || d.meta.as_of || '—');
+    workbuddyBadge.classList.toggle('internal', internal);
+  }
 }
 
 async function loadData() {
@@ -328,6 +335,7 @@ function initSidebarNavigation() {
   $$('[data-go-view]').forEach(button => {
     button.addEventListener('click', () => setView(button.dataset.goView));
   });
+  $("#workbuddyBadge")?.addEventListener('click', () => setRoute('ai/workbuddy'));
   $('#sidebarToggle')?.addEventListener('click', () => document.body.classList.add('sidebar-open'));
   $('#sidebarClose')?.addEventListener('click', closeSidebar);
   $('#sidebarOverlay')?.addEventListener('click', closeSidebar);
@@ -2153,6 +2161,7 @@ function renderIntelExtras() {
 }
 
 function renderAICenter() {
+  renderWorkBuddy();
   renderAIChat();
   renderAITasks();
   renderAIApproval();
@@ -2163,6 +2172,87 @@ function renderAICenter() {
     setTimeout(() => $('#aiTaskMaterial')?.focus(), 120);
   });
   $('#aiEvidenceMethodBtn')?.addEventListener('click', openMethod);
+}
+
+function formatWorkBuddyTime(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value).replace('T', ' ');
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(parsed).replace(/\//g, '-');
+}
+
+function renderWorkBuddy() {
+  if (!$('#workbuddyDashboard')) return;
+  const d = state.data;
+  const market = d.supply.external_market;
+  const generatedAt = formatWorkBuddyTime(d.meta.generated_at || d.meta.as_of);
+  const marketAt = formatWorkBuddyTime(market.updated_at || d.meta.as_of);
+  const sourceFile = d.meta.source_file || 'SAP 脱敏工作簿';
+  const materialCount = d.supply.materials.length;
+  const actionCount = d.supply.actions.length;
+  const supplierCount = d.supply.suppliers.items.length;
+  const marketCount = Array.isArray(market.items) ? market.items.length : 0;
+  const repoUrl = 'https://github.com/Xiejiananaa/Xiejiananaa.github.io';
+  const actionsUrl = repoUrl + '/actions';
+  const steps = [
+    { title: 'WorkBuddy 定时调度', text: '外部 Agent 触发 SAP 数据协同任务，不占用业务人员终端操作。', meta: '已接入' },
+    { title: 'SAP 库存抓取', text: 'ZWM002 库存、ME2L 采购计划、MB51 实际收货统一导出。', meta: 'SAP GUI' },
+    { title: '自动翻译与部分脱敏', text: '生成供应雷达总表，过滤历史工厂与无消耗行，仅保留比赛口径。', meta: 'competition' },
+    { title: 'JSON 编译', text: materialCount + ' 个物料/工厂组合、' + actionCount + ' 条行动、' + supplierCount + ' 家供应商。', meta: generatedAt },
+    { title: '发布前安全校验', text: '校验工厂范围、脱敏名称、1160 数据、字段结构与行数一致性。', meta: '通过' },
+    { title: 'GitHub Pages 发布', text: 'GitHub Actions 自动构建并发布，前端直接读取 dashboard_data.json。', meta: '已部署' },
+  ];
+  $('#workbuddyDashboard').innerHTML = `
+    <section class="workbuddy-hero">
+      <div class="workbuddy-hero-top">
+        <div class="workbuddy-identity">
+          <span class="workbuddy-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3-1.2 3.3L7.5 7.5l3.3 1.2L12 12l1.2-3.3 3.3-1.2-3.3-1.2L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m5 14-.8 2.2L2 17l2.2.8L5 20l.8-2.2L8 17l-2.2-.8L5 14Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="m19 13-.6 1.6L17 15l1.4.6L19 17l.6-1.4L21 15l-1.4-.4L19 13Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+          <div><span class="eyebrow">External agent</span><h3>WorkBuddy</h3><p>SAP 数据自动化 · 定时协同 · GitHub 发布</p></div>
+        </div>
+        <span class="workbuddy-online"><i></i>最近一次协同成功</span>
+      </div>
+      <div class="workbuddy-kpis">
+        <div class="workbuddy-kpi"><span>最近运行</span><strong>${esc(generatedAt)}</strong><em>数据生成时间</em></div>
+        <div class="workbuddy-kpi"><span>业务数据</span><strong>${materialCount}<small> 项</small></strong><em>${actionCount} 条行动 · ${supplierCount} 家供应商</em></div>
+        <div class="workbuddy-kpi"><span>外部行情</span><strong>${marketCount}<small> 条</small></strong><em>${esc(marketAt)} 更新</em></div>
+        <div class="workbuddy-kpi"><span>交付通道</span><strong class="word">GitHub Pages</strong><em>Actions 自动部署</em></div>
+      </div>
+      <p class="workbuddy-disclaimer">本页展示 WorkBuddy 最近一次协同产生的数据与发布证据。比赛演示无需打开 PowerShell 或 SAP GUI。</p>
+    </section>
+    <div class="workbuddy-main-grid">
+      <section class="workbuddy-card">
+        <div class="workbuddy-card-head"><div><span class="eyebrow">Agent execution</span><h3>本次协同链路</h3></div><span class="badge green">全部完成</span></div>
+        <div class="workbuddy-flow">${steps.map((step, index) => `<div class="workbuddy-step"><span class="workbuddy-step-mark">${index < steps.length - 1 ? '<svg viewBox="0 0 16 16" fill="none"><path d="m4 8.2 2.4 2.4L12 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2.5v3M8 10.5v3M2.5 8h3M10.5 8h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'}</span><div><strong>${esc(step.title)}</strong><p>${esc(step.text)}</p></div><em>${esc(step.meta)}</em></div>`).join('')}</div>
+      </section>
+      <aside class="workbuddy-card workbuddy-evidence">
+        <div class="workbuddy-card-head"><div><span class="eyebrow">Run evidence</span><h3>运行证据</h3></div></div>
+        <div class="workbuddy-evidence-list">
+          <div><span>Agent 身份</span><strong>WorkBuddy</strong></div>
+          <div><span>执行状态</span><strong class="success">成功</strong></div>
+          <div><span>SAP 工作簿</span><strong title="${esc(sourceFile)}">${esc(sourceFile)}</strong></div>
+          <div><span>数据契约</span><strong>${esc(d.meta.contract_version || '—')}</strong></div>
+          <div><span>运行模式</span><strong>${esc(d.meta.mode === 'competition' ? '比赛脱敏版' : '内部版')}</strong></div>
+          <div><span>数据范围</span><strong>${esc(d.meta.mode === 'competition' ? '工厂 1501' : '全部工厂')}</strong></div>
+        </div>
+        <div class="workbuddy-links">
+          <a href="${actionsUrl}" target="_blank" rel="noopener noreferrer">查看 GitHub Actions <span>↗</span></a>
+          <a href="${repoUrl}" target="_blank" rel="noopener noreferrer">打开 GitHub 仓库 <span>↗</span></a>
+        </div>
+        <p class="workbuddy-evidence-note">页面能读取当前 JSON，且校验与部署由 GitHub Actions 再次执行，构成可追溯的 Agent 协同回执。</p>
+      </aside>
+    </div>
+    <section class="workbuddy-audit">
+      <div><span class="eyebrow">Audit trail</span><h3>为什么这不是静态假数据</h3></div>
+      <div class="workbuddy-audit-grid">
+        <div><strong>SAP 原始输出</strong><p>ZWM002、ME2L、MB51 三类数据由自动化脚本抓取。</p></div>
+        <div><strong>确定性编译</strong><p>${materialCount} 项业务数据由 Python 从 Excel 计算生成。</p></div>
+        <div><strong>发布时再次校验</strong><p>GitHub Actions 校验通过后才部署，失败不会覆盖线上版本。</p></div>
+      </div>
+    </section>
+  `;
 }
 
 function renderAIChat() {

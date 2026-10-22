@@ -207,6 +207,8 @@
 - [x] 线上页面与脱敏 JSON 加载验证
 - [x] README 同步完整运行流程与故障排查
 - [x] 增加 SAP 抓取 → 翻译 → 脱敏 → JSON → 校验的一键脚本
+- [x] 新增 WorkBuddy 协同展示页与全站协同徽标
+- [x] 比赛演示无需打开 PowerShell，支持线上展示 Agent 运行证据
 - [x] WorkBuddy 指南补充 SAP GUI 运行边界和 wrapper 用法
 - [x] 行业供需和供应商动态接入 WorkBuddy 行情摘要
 - [x] Cloudflare Worker Basic Auth 与构建配置完成

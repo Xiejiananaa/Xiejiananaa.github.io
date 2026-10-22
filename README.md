@@ -22,6 +22,7 @@ GitHub Actions → GitHub Pages
 
 - 正式比赛页面：https://xiejiananaa.github.io/
 - 行业情报页面：https://xiejiananaa.github.io/?route=intel/industry
+- WorkBuddy 协同页：https://xiejiananaa.github.io/?route=ai/workbuddy
 - GitHub 仓库：https://github.com/Xiejiananaa/Xiejiananaa.github.io
 - 自动部署工作流：`.github/workflows/deploy-pages.yml`
 
@@ -41,7 +42,7 @@ GitHub Actions → GitHub Pages
 |---|---|
 | SAP GUI 自动化 | 自动导出 ZWM002 库存、ME2L、MB51，生成原始 Excel |
 | SAP 翻译与脱敏 | 把原始表编译成供应雷达总表，并按比赛模式生成部分脱敏工作簿 |
-| WorkBuddy | 抓取公开行情，写入 `data/external_market.json`，执行计算、校验和推送 |
+| WorkBuddy | 定时触发 SAP 自动化，抓取公开行情，执行计算、校验和推送 |
 | Codex / 本地代码 | 数据计算脚本、JSON 接口、前端页面、图表和交互 |
 | GitHub Actions | 校验公开 JSON、构建单文件分享版、部署 GitHub Pages |
 | GitHub Pages | 比赛版在线页面 |
@@ -353,6 +354,21 @@ GitHub Actions 会：
 ## 6. WorkBuddy 每日运行方式
 
 WorkBuddy 严格按 `WORKBUDDY_GUIDE.md` 执行。
+
+比赛演示时不需要打开 PowerShell，直接打开：
+
+```text
+https://xiejiananaa.github.io/?route=ai/workbuddy
+```
+
+该页面会展示：
+
+- WorkBuddy Agent 身份和最近一次协同状态
+- SAP 抓取、翻译、脱敏、JSON 编译、安全校验、GitHub Pages 发布链路
+- 最近数据时间、工作簿、物料数、供应商数和行情条数
+- GitHub Actions 与仓库证据链接
+
+页面顶部还会常驻“WorkBuddy 已协同”徽标，点击可直达协同页。
 
 完整顺序：
 
