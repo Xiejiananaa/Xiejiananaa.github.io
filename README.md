@@ -63,6 +63,7 @@ data/dashboard_data.json           前端唯一公开数据接口
 data/internal/dashboard_data.json  内部版数据，禁止公开
 
 scripts/run_sap_pipeline.ps1        SAP 抓取 → 翻译 → 脱敏 → 编译 → 校验
+运行SAP流水线.bat                   Bypass 执行策略的一键入口
 scripts/generate_data.py           Excel + 行情 → dashboard_data.json
 scripts/validate_dashboard_data.py 发布前安全校验
 scripts/build_share_html.py        生成离线单文件分享版
@@ -232,13 +233,13 @@ if ($LASTEXITCODE -ne 0) { throw "数据校验失败，停止发布" }
 > WorkBuddy 可以使用一条命令自动执行上面的 SAP 抓取、编译和校验：
 >
 > ```powershell
-> & "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
 > ```
 >
 > 只检查环境、不执行 SAP：
 >
 > ```powershell
-> & "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -CheckOnly -SkipSapFetch
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -CheckOnly -SkipSapFetch
 > ```
 
 ### 第五步：本地启动页面验收
@@ -467,6 +468,20 @@ Ctrl + F5
 ```
 
 或等待 GitHub Pages 缓存刷新。页面静态资源已带版本参数。
+
+### PowerShell 提示“在此系统上禁止运行脚本”
+
+不要修改全局执行策略，直接使用进程级 Bypass：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+```
+
+也可以直接运行：
+
+```text
+D:\Users\22614\Documents\供应链平台\运行SAP流水线.bat
+```
 
 ### JSON 校验失败
 

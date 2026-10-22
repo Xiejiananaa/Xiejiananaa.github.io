@@ -33,10 +33,16 @@ MB51 实际收货
 统一执行入口：
 
 ```powershell
-& "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
 ```
 
 该入口会继续执行 `generate_data.py` 和 `validate_dashboard_data.py`。
+
+推荐通过 Bypass 启动，避免 Windows 执行策略拦截：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+```
 
 前提条件：
 
@@ -126,7 +132,7 @@ if ($LASTEXITCODE -ne 0) { throw "external_market.json 不是有效 JSON" }
 推荐 WorkBuddy 使用统一入口，一次完成 SAP 抓取、翻译、脱敏、生成和校验：
 
 ```powershell
-& "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
 if ($LASTEXITCODE -ne 0) { throw "SAP → JSON 流水线失败，停止发布" }
 ```
 

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
   [string]$SapRoot = "D:\Users\22614\Documents\供应雷达",
   [string]$SapPython = "D:\Users\22614\Documents\供应雷达\.venv\Scripts\python.exe",
