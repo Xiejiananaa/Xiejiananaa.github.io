@@ -63,7 +63,7 @@ data/dashboard_data.json           前端唯一公开数据接口
 data/internal/dashboard_data.json  内部版数据，禁止公开
 
 scripts/run_sap_pipeline.ps1        SAP 抓取 → 翻译 → 脱敏 → 编译 → 校验
-运行SAP流水线.bat                   Bypass 执行策略的一键入口
+运行SAP流水线.bat                   备用入口；失败时使用 powershell.exe 命令
 scripts/generate_data.py           Excel + 行情 → dashboard_data.json
 scripts/validate_dashboard_data.py 发布前安全校验
 scripts/build_share_html.py        生成离线单文件分享版
@@ -235,6 +235,8 @@ if ($LASTEXITCODE -ne 0) { throw "数据校验失败，停止发布" }
 > ```powershell
 > powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
 > ```
+>
+> 已实机验证：如果 `.bat` 仍被系统环境拦截，直接使用上面的 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ...` 命令，不需要修改全局执行策略。
 >
 > 只检查环境、不执行 SAP：
 >
