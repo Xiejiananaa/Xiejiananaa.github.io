@@ -1,5 +1,11 @@
 # 供应雷达 · 供应链决策工作台
 
+## 在线地址
+
+- 正式页面：https://xiejiananaa.github.io/
+- GitHub 仓库：https://github.com/Xiejiananaa/Xiejiananaa.github.io
+- 自动部署：`.github/workflows/deploy-pages.yml`
+
 ## 页面初版
 
 - 暗色 SaaS 风格固定左侧手风琴导航：今日指挥中心、物料供需与保供、供应商与仓储、生产协同与动态沙盘、行业情报与市场洞察、AI智能协同

@@ -201,6 +201,10 @@
 - [x] 新增 `data/external_market.example.json` 行情字段示例
 - [x] `更新比赛页面.bat` 增加校验步骤
 - [x] GitHub Pages 发布目录排除 `data/internal/`、Excel 与日志
+- [x] 初始化本地 Git 并绑定 `Xiejiananaa.github.io`
+- [x] 首次推送 `main` 分支
+- [x] GitHub Actions 自动部署成功
+- [x] 线上页面与脱敏 JSON 加载验证
 
 - [x] 生成根目录 `WORKBUDDY_GUIDE.md`
 - [x] 写明动作1：搜索外部行情并写入 `data/external_market.json`

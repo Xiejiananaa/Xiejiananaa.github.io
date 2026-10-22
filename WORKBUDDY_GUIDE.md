@@ -120,7 +120,13 @@ if ($LASTEXITCODE -ne 0) { throw "dashboard_data.json 安全校验失败，停�
 
 ## 5. 动作三：提交和推送
 
-> 当前工作目录还没有初始化 Git 仓库。首次接入 GitHub 后，再执行本节。
+> 当前目录已初始化 Git，并绑定远程仓库：
+>
+> ```text
+> origin = https://github.com/Xiejiananaa/Xiejiananaa.github.io.git
+> branch = main
+> ```
+>
 > 日常自动任务只能提交数据白名单，禁止执行 `git add .` 或 `git add data/`。
 
 ```powershell
