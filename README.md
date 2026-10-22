@@ -6,9 +6,21 @@
 - GitHub 仓库：https://github.com/Xiejiananaa/Xiejiananaa.github.io
 - 自动部署：`.github/workflows/deploy-pages.yml`
 
-## Cloudflare 密码保护
+## Cloudflare 内部版预留
 
-Cloudflare Worker 使用 Basic Auth 保护整站，包括 `dashboard_data.json`。
+当前公开比赛版仍以 GitHub Pages 为主入口：
+
+```text
+https://xiejiananaa.github.io/
+```
+
+Cloudflare Worker 已完成 Basic Auth 密码保护代码和配置，作为后续内部版入口预留。由于 `workers.dev` 在当前国内网络连接不稳定，正式启用前需要：
+
+1. 绑定可控的自定义域名。
+2. 重新启用 Cloudflare 自动构建。
+3. 验证 Basic Auth 和 `dashboard_data.json` 的访问控制。
+
+当前 Cloudflare 自动构建已暂停，避免公开版每次更新都重复部署到暂时不可用的入口。
 
 ```text
 用户名：supply

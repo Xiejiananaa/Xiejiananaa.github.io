@@ -205,6 +205,8 @@
 - [x] 首次推送 `main` 分支
 - [x] GitHub Actions 自动部署成功
 - [x] 线上页面与脱敏 JSON 加载验证
+- [x] Cloudflare Worker Basic Auth 与构建配置完成
+- [ ] Cloudflare 内部版绑定自定义域名并恢复自动构建
 
 - [x] 生成根目录 `WORKBUDDY_GUIDE.md`
 - [x] 写明动作1：搜索外部行情并写入 `data/external_market.json`
