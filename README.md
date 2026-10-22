@@ -3,7 +3,11 @@
 供应雷达采用“数据与展示分离”架构：
 
 ```text
-SAP Excel + WorkBuddy 外部行情
+SAP GUI 自动抓取（ZWM002 / ME2L / MB51）
+        ↓
+自动翻译 + 部分脱敏 Excel
+        +
+WorkBuddy 外部行情 JSON
         ↓
 scripts/generate_data.py
         ↓
@@ -35,7 +39,8 @@ GitHub Actions → GitHub Pages
 
 | 模块 | 负责内容 |
 |---|---|
-| SAP / Excel | 库存、消耗、PO、到货、MB51 等业务底表 |
+| SAP GUI 自动化 | 自动导出 ZWM002 库存、ME2L、MB51，生成原始 Excel |
+| SAP 翻译与脱敏 | 把原始表编译成供应雷达总表，并按比赛模式生成部分脱敏工作簿 |
 | WorkBuddy | 抓取公开行情，写入 `data/external_market.json`，执行计算、校验和推送 |
 | Codex / 本地代码 | 数据计算脚本、JSON 接口、前端页面、图表和交互 |
 | GitHub Actions | 校验公开 JSON、构建单文件分享版、部署 GitHub Pages |
@@ -57,6 +62,7 @@ data/external_market.example.json  行情字段示例
 data/dashboard_data.json           前端唯一公开数据接口
 data/internal/dashboard_data.json  内部版数据，禁止公开
 
+scripts/run_sap_pipeline.ps1        SAP 抓取 → 翻译 → 脱敏 → 编译 → 校验
 scripts/generate_data.py           Excel + 行情 → dashboard_data.json
 scripts/validate_dashboard_data.py 发布前安全校验
 scripts/build_share_html.py        生成离线单文件分享版
@@ -142,17 +148,56 @@ data\external_market.json
 
 `change_pct` 支持数字或带 `%` 的字符串；没有可靠涨跌数据时写 `null`，不要补造成 0。
 
-#### SAP 抓取数据
+#### SAP 数据自动抓取
 
-比赛版输入通常来自部分脱敏工作簿。生成脚本优先级：
+SAP 抓取由 `D:\Users\22614\Documents\供应雷达\run_pipeline.py` 负责：
 
-1. `--input` 指定文件
-2. `SUPPLY_INPUT` 环境变量
-3. `data/inventory_report_test.xlsx`
-4. 相邻项目的总表文件
-5. `data/*总表*.xlsx`
+```text
+ZWM002 库存
++ ME2L 采购计划
++ MB51 实际收货
+        ↓
+原始 Excel
+        ↓
+sap_translator.py 翻译
+        ↓
+供应雷达自动总表
+        ↓
+desensitizer.py 部分脱敏
+```
 
-比赛版生成前要确认输入表属于脱敏版，且只包含允许公开的工厂数据。
+环境检查：
+
+```powershell
+$SAPROOT = "D:\Users\22614\Documents\供应雷达"
+$SAPPY = "D:\Users\22614\Documents\供应雷达\.venv\Scripts\python.exe"
+
+Set-Location $SAPROOT
+& $SAPPY run_pipeline.py --check
+if ($LASTEXITCODE -ne 0) { throw "SAP 自动化环境检查失败" }
+```
+
+执行完整抓取、翻译和部分脱敏：
+
+```powershell
+Set-Location $SAPROOT
+& $SAPPY run_pipeline.py --mask-mode 部分 --fetch-profiles ZWM002,ME2L,MB51
+if ($LASTEXITCODE -ne 0) { throw "SAP 抓取流水线失败" }
+```
+
+默认输出目录：
+
+```text
+%TEMP%\SAPRadar_outputs\desensitized\供应雷达-本地版_脱敏_部分_*.xlsx
+```
+
+SAP GUI 必须已安装并完成登录，自动化运行时 Windows 桌面需要保持解锁。推荐用同一个 Windows 用户运行，并启用“仅在用户登录时运行”的计划任务。
+
+随后 `generate_data.py` 会自动选择最新的部分脱敏工作簿。也可以通过 `--input` 明确指定：
+
+```powershell
+& $PY scripts\generate_data.py --mode competition --input "完整脱敏工作簿路径.xlsx"
+```
 
 ### 第三步：生成 dashboard_data.json
 
@@ -183,6 +228,18 @@ if ($LASTEXITCODE -ne 0) { throw "数据校验失败，停止发布" }
 - 物料描述和供应商名称是否保持脱敏
 - 是否包含内部生产数据、绝对路径或密钥字段
 - 行数统计与实际数组长度是否一致
+
+> WorkBuddy 可以使用一条命令自动执行上面的 SAP 抓取、编译和校验：
+>
+> ```powershell
+> & "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+> ```
+>
+> 只检查环境、不执行 SAP：
+>
+> ```powershell
+> & "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -CheckOnly -SkipSapFetch
+> ```
 
 ### 第五步：本地启动页面验收
 
@@ -299,12 +356,26 @@ WorkBuddy 严格按 `WORKBUDDY_GUIDE.md` 执行。
 ```text
 1. git pull --rebase
 2. 抓取公开行情并写入 data/external_market.json
-3. 执行 generate_data.py --mode competition
-4. 执行 validate_dashboard_data.py --mode competition
+3. 执行 scripts/run_sap_pipeline.ps1 -MaskMode 部分
+4. 检查脚本退出码，失败则停止
 5. 只提交 external_market.json 和 dashboard_data.json
 6. git push origin main
 7. GitHub Actions 自动部署
 ```
+
+`run_sap_pipeline.ps1` 内部会完成：
+
+```text
+SAP ZWM002 / ME2L / MB51 抓取
+→ 自动翻译
+→ 部分脱敏
+→ generate_data.py
+→ validate_dashboard_data.py
+```
+
+因此 WorkBuddy 不需要自己理解 Excel 字段，也不要直接修改 JSON。
+
+SAP 自动化必须运行在安装并登录 SAP GUI 的 Windows 机器上，桌面会话需要保持解锁。如果 WorkBuddy 与 SAP GUI 不在同一台机器，应由 SAP 主机上的计划任务执行该脚本，WorkBuddy 只负责接收成功信号后推送 GitHub。
 
 WorkBuddy 不负责：
 

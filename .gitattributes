@@ -10,3 +10,4 @@
 *.bat text eol=crlf
 *.mjs text eol=lf
 *.jsonc text eol=lf
+*.ps1 text eol=crlf

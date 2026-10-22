@@ -17,7 +17,35 @@
 - 禁止提交任何 SAP Excel、MB51、内部版 JSON、账号、Token 或密钥。
 - 公开版物料和供应商信息必须保持部分脱敏。
 
-## 2. 工作目录和解释器
+## 2. SAP 数据抓取边界
+
+SAP 数据不是 WorkBuddy 直接解析 Excel，而是由 SAP 自动化流水线完成：
+
+```text
+ZWM002 库存
+ME2L 采购计划
+MB51 实际收货
+→ 自动翻译
+→ 部分脱敏
+→ 供应雷达工作簿
+```
+
+统一执行入口：
+
+```powershell
+& "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+```
+
+该入口会继续执行 `generate_data.py` 和 `validate_dashboard_data.py`。
+
+前提条件：
+
+- SAP GUI 已安装并登录。
+- Windows 桌面保持解锁。
+- WorkBuddy 与 SAP GUI 使用同一个 Windows 用户，或 WorkBuddy 能远程触发该主机任务。
+- 抓取失败时停止，不提交旧数据冒充当天数据。
+
+## 3. 工作目录和解释器
 
 ```text
 项目目录：D:\Users\22614\Documents\供应链平台
@@ -37,7 +65,7 @@ $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
 ```
 
-## 3. 动作一：抓取外部行情并写入 external_market.json
+## 4. 动作一：抓取外部行情并写入 external_market.json
 
 > 如果是定时任务，先同步远端代码，再抓行情：
 >
@@ -93,7 +121,16 @@ data\external_market.json
 if ($LASTEXITCODE -ne 0) { throw "external_market.json 不是有效 JSON" }
 ```
 
-## 4. 动作二：生成并校验 dashboard_data.json
+## 5. 动作二：生成并校验 dashboard_data.json
+
+推荐 WorkBuddy 使用统一入口，一次完成 SAP 抓取、翻译、脱敏、生成和校验：
+
+```powershell
+& "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+if ($LASTEXITCODE -ne 0) { throw "SAP → JSON 流水线失败，停止发布" }
+```
+
+以下为分步执行方式，用于排查问题：
 
 ```powershell
 & $PY scripts\generate_data.py --mode competition
@@ -120,7 +157,7 @@ if ($LASTEXITCODE -ne 0) { throw "dashboard_data.json 安全校验失败，停�
 & $PY scripts\validate_dashboard_data.py --mode competition --baseline data\previous_dashboard_data.json
 ```
 
-## 5. 动作三：提交和推送
+## 6. 动作三：提交和推送
 
 > 当前目录已初始化 Git，并绑定远程仓库：
 >
@@ -160,7 +197,7 @@ git push origin main
 
 连续 3 次失败后停止，不强制推送，不覆盖远端提交。
 
-## 6. GitHub Pages 自动部署
+## 7. GitHub Pages 自动部署
 
 工作流文件：
 
@@ -194,7 +231,7 @@ dist/供应雷达-分享讨论版.html
 
 不得把 `data/internal/`、Excel、日志或密钥放入发布目录。
 
-## 7. 单文件分享版
+## 8. 单文件分享版
 
 日常自动更新不需要提交 `dist` 目录，避免每天提交约 2 MB 的 HTML。
 
@@ -212,7 +249,7 @@ dist\供应雷达-分享讨论版.html
 
 单文件版内嵌同一份 `data/dashboard_data.json`，可双击打开，也可以打包成 ZIP 分享。
 
-## 8. 内部版规则
+## 9. 内部版规则
 
 内部版只在受控本地目录使用：
 
@@ -228,7 +265,7 @@ dist\供应雷达-分享讨论版.html
 - 不得生成公开分享 HTML。
 - 不得被 WorkBuddy 的公开发布任务自动覆盖。
 
-## 9. 失败重试和停止条件
+## 10. 失败重试和停止条件
 
 ### 可以重试
 
@@ -247,7 +284,7 @@ dist\供应雷达-分享讨论版.html
 
 停止时保留上一版可用 JSON，发送失败通知，不执行强制推送。
 
-## 10. 无提交演练
+## 11. 无提交演练
 
 首次启用前执行：
 
