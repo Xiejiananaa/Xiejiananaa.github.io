@@ -2,6 +2,7 @@
 """Build a single-file, offline supply radar discussion page."""
 from __future__ import annotations
 
+import base64
 import json
 import re
 from pathlib import Path
@@ -13,6 +14,7 @@ APP = ROOT / "assets" / "app.js"
 CHINA_MAP_GEO = ROOT / "assets" / "china-map-geo.js"
 SUPPLIER_MAP = ROOT / "assets" / "supplier-map.js"
 ECHARTS = ROOT / "assets" / "echarts.min.js"
+INTER_FONT = ROOT / "assets" / "fonts" / "inter-var.woff2"
 GEO = ROOT / "assets" / "china.geo.json"
 DATA = ROOT / "data" / "dashboard_data.json"
 OUTPUT = ROOT / "dist" / "供应雷达-分享讨论版.html"
@@ -29,9 +31,14 @@ def main() -> int:
     china_map_geo = CHINA_MAP_GEO.read_text(encoding="utf-8")
     supplier_map = SUPPLIER_MAP.read_text(encoding="utf-8")
     echarts = ECHARTS.read_text(encoding="utf-8")
+    font_data = base64.b64encode(INTER_FONT.read_bytes()).decode("ascii")
     geo = json.loads(GEO.read_text(encoding="utf-8"))
     data = json.loads(DATA.read_text(encoding="utf-8"))
 
+    css = css.replace(
+        'url("./fonts/inter-var.woff2") format("woff2")',
+        f'url("data:font/woff2;base64,{font_data}") format("woff2")',
+    )
     html = re.sub(
         r'<link rel="stylesheet" href="\./assets/styles\.css(?:\?[^"]*)?">',
         f"<style>\n{css}\n</style>",

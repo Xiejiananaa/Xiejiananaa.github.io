@@ -837,11 +837,22 @@ function decisionMiniItems(key) {
   return (items || []).slice(0, 2).map(a => `<span>${esc(a.material)} · ${esc(a.plant)} · ${compact(a.suggested_replenishment, 0)} kg</span>`).join('') || '<span>暂无明细</span>';
 }
 
+const CHART_COLORS = ['#1B5378', '#4A8A9E', '#8CA6AE', '#B98A4E', '#A33A2A', '#7B8880'];
+const CHART_AXIS = '#E6E3DD';
+const CHART_GRID = '#EDEAE4';
+const CHART_LABEL = '#7E8388';
+
 function chartTheme() {
   return {
-    color: ['#2563eb', '#ea580c', '#d97706', '#059669', '#7c3aed', '#94a3b8'],
-    textStyle: { fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif', color: '#64748b' },
-    tooltip: { backgroundColor: '#0f172a', borderWidth: 0, textStyle: { color: '#fff', fontSize: 11 } },
+    color: CHART_COLORS,
+    textStyle: { fontFamily: 'Inter, PingFang SC, Microsoft YaHei, sans-serif', color: CHART_LABEL },
+    tooltip: {
+      backgroundColor: '#FFFFFF',
+      borderColor: CHART_AXIS,
+      borderWidth: 1,
+      textStyle: { color: '#1B1D1F', fontSize: 12 },
+      extraCssText: 'box-shadow:none;border-radius:5px;',
+    },
   };
 }
 
@@ -876,12 +887,12 @@ function renderRiskChart() {
   ensureChart('riskChart', {
     ...chartTheme(),
     tooltip: { trigger: 'item', ...chartTheme().tooltip },
-    legend: { bottom: 0, icon: 'circle', itemWidth: 7, itemHeight: 7, textStyle: { fontSize: 10, color: '#64748b' } },
+    legend: { bottom: 0, icon: 'circle', itemWidth: 7, itemHeight: 7, textStyle: { fontSize: 11, color: CHART_LABEL } },
     series: [{
       type: 'pie', radius: ['48%', '70%'], center: ['50%', '43%'], avoidLabelOverlap: true,
       itemStyle: { borderColor: '#fff', borderWidth: 3 },
       label: { show: false }, emphasis: { label: { show: false } },
-      data: data.map((item, index) => ({ ...item, itemStyle: { color: ['#059669', '#d97706', '#dc2626', '#94a3b8'][index] || '#2563eb' } })),
+      data: data.map((item, index) => ({ ...item, itemStyle: { color: [CHART_COLORS[5], CHART_COLORS[3], CHART_COLORS[4], CHART_COLORS[2]][index] || CHART_COLORS[0] } })),
     }],
   });
 }
@@ -889,17 +900,17 @@ function renderRiskChart() {
 function renderConfidenceChart() {
   const items = state.data.overview.distributions.confidence_active;
   const labels = ['高', '中', '低'];
-  const color = { 高: '#059669', 中: '#2563eb', 低: '#ea580c' };
+  const color = { 高: CHART_COLORS[5], 中: CHART_COLORS[0], 低: CHART_COLORS[3] };
   ensureChart('confidenceChart', {
     ...chartTheme(),
     grid: { left: 22, right: 18, top: 16, bottom: 26 },
-    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef3f8' } }, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 9 } },
-    yAxis: { type: 'category', data: labels, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 10 } },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: CHART_GRID, type: 'solid' } }, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 11, color: CHART_LABEL } },
+    yAxis: { type: 'category', data: labels, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 11, color: CHART_LABEL } },
     series: [{
-      type: 'bar', barWidth: 15, label: { show: true, position: 'right', fontSize: 9, color: '#475569' },
+      type: 'bar', barWidth: 15, label: { show: true, position: 'right', fontSize: 11, color: CHART_LABEL },
       data: labels.map(name => {
         const value = items.find(x => x.name === name)?.value || 0;
-        return { value, itemStyle: { color: color[name], borderRadius: [0, 6, 6, 0] } };
+        return { value, itemStyle: { color: color[name], borderRadius: 0 } };
       }),
     }],
   });
@@ -1563,9 +1574,9 @@ function renderAgingChart() {
   ensureChart('agingChart', {
     ...chartTheme(),
     grid: { left: 42, right: 18, top: 18, bottom: 32 },
-    xAxis: { type: 'category', data: data.map(x => x.bucket), axisLine: { lineStyle: { color: '#dfe8f2' } }, axisTick: { show: false }, axisLabel: { fontSize: 9, color: '#94a3b8' } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef3f8' } }, axisLabel: { fontSize: 9, color: '#94a3b8' } },
-    series: [{ type: 'bar', barWidth: 22, data: data.map((x, index) => ({ value: x.count, itemStyle: { color: ['#2563eb','#3b82f6','#60a5fa','#d97706','#dc2626'][index], borderRadius: [6,6,0,0] } })), label: { show: true, position: 'top', fontSize: 9, color: '#64748b' } }],
+    xAxis: { type: 'category', data: data.map(x => x.bucket), axisLine: { lineStyle: { color: CHART_AXIS } }, axisTick: { show: false }, axisLabel: { fontSize: 11, color: CHART_LABEL } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: CHART_GRID, type: 'solid' } }, axisLabel: { fontSize: 11, color: CHART_LABEL } },
+    series: [{ type: 'bar', barWidth: 22, data: data.map((x, index) => ({ value: x.count, itemStyle: { color: CHART_COLORS[index] || CHART_COLORS[0], borderRadius: 0 } })), label: { show: true, position: 'top', fontSize: 11, color: CHART_LABEL } }],
   });
 }
 
@@ -2190,13 +2201,13 @@ function renderGapTrendChart() {
     ...chartTheme(),
     grid: { left: 48, right: 18, top: 28, bottom: 36 },
     tooltip: { trigger: 'axis', ...chartTheme().tooltip },
-    legend: { top: 0, right: 12, textStyle: { fontSize: 9, color: '#64748b' } },
-    xAxis: { type: 'category', boundaryGap: false, data: dates, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe8f2' } }, axisLabel: { fontSize: 9, color: '#94a3b8' } },
-    yAxis: { type: 'value', axisLabel: { formatter: v => compact(v, 0), fontSize: 9, color: '#94a3b8' }, splitLine: { lineStyle: { color: '#eef3f8' } } },
+    legend: { top: 0, right: 12, textStyle: { fontSize: 11, color: CHART_LABEL } },
+    xAxis: { type: 'category', boundaryGap: false, data: dates, axisTick: { show: false }, axisLine: { lineStyle: { color: CHART_AXIS } }, axisLabel: { fontSize: 11, color: CHART_LABEL } },
+    yAxis: { type: 'value', axisLabel: { formatter: v => compact(v, 0), fontSize: 11, color: CHART_LABEL }, splitLine: { lineStyle: { color: CHART_GRID, type: 'solid' } } },
     series: [
-      { name: '预测可用库存', type: 'line', smooth: true, symbol: 'none', data: predicted, lineStyle: { color: tone === 'red' ? '#dc2626' : tone === 'orange' ? '#ea580c' : '#059669', width: 2 }, areaStyle: { color: tone === 'red' ? 'rgba(220,38,38,.08)' : tone === 'orange' ? 'rgba(234,88,12,.08)' : 'rgba(5,150,105,.08)' } },
-      { name: '安全库存', type: 'line', symbol: 'none', data: dates.map(() => safety), lineStyle: { color: '#94a3b8', width: 1, type: 'dashed' } },
-      { name: '到货节点', type: 'scatter', symbolSize: 7, data: [[lead, Math.min(predicted[lead] + incoming, Math.max(...predicted, safety))]], itemStyle: { color: '#2563eb' } },
+      { name: '预测可用库存', type: 'line', smooth: false, symbol: 'none', data: predicted, lineStyle: { color: tone === 'red' ? CHART_COLORS[4] : tone === 'orange' ? CHART_COLORS[3] : CHART_COLORS[5], width: 1.5 } },
+      { name: '安全库存', type: 'line', symbol: 'none', data: dates.map(() => safety), lineStyle: { color: CHART_COLORS[2], width: 1.5, type: 'dashed' } },
+      { name: '到货节点', type: 'scatter', symbolSize: 4, data: [[lead, Math.min(predicted[lead] + incoming, Math.max(...predicted, safety))]], itemStyle: { color: CHART_COLORS[0] } },
     ],
   });
 }
@@ -2594,7 +2605,7 @@ function renderAITasks() {
     </div>
     <div class="divider" style="margin:18px 0"></div>
     <div class="panel-head"><div><span class="eyebrow">Create task</span><h3>从补货建议创建任务</h3></div><span class="panel-note">本地 Agent 演练</span></div>
-    <form id="aiTaskCreateForm" class="sim-controls" style="grid-template-columns:2fr 1fr 1fr auto"><div class="sim-field"><label>补货建议</label><select id="aiTaskMaterial">${actionOptions}</select></div><div class="sim-field"><label>负责人</label><input id="aiTaskOwner" placeholder="例如：采购员 A"></div><div class="sim-field"><label>截止日期</label><input id="aiTaskDue" type="date"></div><button class="btn primary" type="submit" style="align-self:end;min-height:34px">创建任务</button></form>
+    <form id="aiTaskCreateForm" class="sim-controls ai-task-create-form"><div class="sim-field"><label>补货建议</label><select id="aiTaskMaterial">${actionOptions}</select></div><div class="sim-field"><label>负责人</label><input id="aiTaskOwner" placeholder="例如：采购员 A"></div><div class="sim-field"><label>截止日期</label><input id="aiTaskDue" type="date"></div><button class="btn primary" type="submit" style="align-self:end;min-height:34px">创建任务</button></form>
     <div class="task-list" style="margin-top:14px">${tasks.map(task => `<div class="task-row"><div class="task-main"><strong>${esc(task.material)} · ${esc(task.plant)}</strong><span>${esc(task.owner || '待指派')} · 截止 ${esc(task.dueDate || '未设置')} · ${compact(task.qty, 0)} kg</span></div><div class="task-side"><span class="status-badge ${taskStatusClass(task.status)}">${taskStatusText(task.status)}</span><button class="btn small" data-task-progress="${task.id}">推进</button><button class="btn small" data-task-submit="${task.id}">提交审批</button><button class="btn small" data-task-done="${task.id}">完成</button></div></div>`).join('') || '<div class="empty-state">还没有本地 Agent 任务，可从上方补货建议创建。</div>'}</div>
   `;
   $('#aiTaskCreateForm')?.addEventListener('submit', event => {

@@ -1,10 +1,10 @@
 /* Supplier distribution map: local SVG geometry with no external map service. */
 (function (global) {
   const RISK = {
-    red: { label: '高风险', color: '#ef4444' },
-    orange: { label: '需关注', color: '#f59e0b' },
-    yellow: { label: '关注', color: '#eab308' },
-    ok: { label: '正常', color: '#a5b5ac' },
+    red: { label: '高风险', color: '#A33A2A' },
+    orange: { label: '需关注', color: '#C06243' },
+    yellow: { label: '关注', color: '#B98A4E' },
+    ok: { label: '正常', color: '#7B8880' },
   };
 
   function esc(value) {
