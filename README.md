@@ -18,6 +18,11 @@ data/dashboard_data.json（唯一前端数据接口）
 GitHub Actions → GitHub Pages
 ```
 
+> **正式交付总览：** 参见 `README_正式交付总览.md`，包含 SAP 自动抓取、供应链可视化平台和 WorkBuddy 的完整运行说明。
+>
+> **脚本中文索引：** 参见 `scripts/脚本功能索引.md`。
+>
+> **当前视觉版本：** V3 暖纸灰 + 墨蓝 + 陶土色阶；本地 Inter 字体；深海军蓝导航。
 ## 1. 在线地址
 
 - 正式比赛页面：https://xiejiananaa.github.io/
