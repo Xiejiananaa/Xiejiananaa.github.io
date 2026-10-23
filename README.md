@@ -61,11 +61,12 @@ assets/供应商地域映射.csv           地域识别辅助数据
 data/external_market.json          WorkBuddy 每日行情输入
 data/external_market.example.json  行情字段示例
 data/dashboard_data.json           前端唯一公开数据接口
+data/dashboard_data.js             双击 index.html 时的本地数据桥接（由生成脚本同步）
 data/internal/dashboard_data.json  内部版数据，禁止公开
 
 scripts/run_sap_pipeline.ps1        SAP 抓取 → 翻译 → 脱敏 → 编译 → 校验
 运行SAP流水线.bat                   备用入口；失败时使用 powershell.exe 命令
-scripts/generate_data.py           Excel + 行情 → dashboard_data.json
+scripts/generate_data.py           Excel + 行情 → dashboard_data.json + dashboard_data.js
 scripts/validate_dashboard_data.py 发布前安全校验
 scripts/build_share_html.py        生成离线单文件分享版
 scripts/build_cloudflare_site.mjs  Cloudflare 内部版构建辅助
@@ -245,6 +246,9 @@ if ($LASTEXITCODE -ne 0) { throw "数据校验失败，停止发布" }
 > powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -CheckOnly -SkipSapFetch
 > ```
 
+> **直接双击查看**：可以直接打开 `index.html`。浏览器在 `file://` 下会禁止读取本地 JSON，页面会自动改为加载由 `generate_data.py` 同步生成的 `data/dashboard_data.js`，不需要启动 HTTP 服务。
+>
+> 如果该桥接文件不存在，先运行 `python scripts/generate_data.py`，或直接打开 `dist/供应雷达-分享讨论版.html`。
 ### 第五步：本地启动页面验收
 
 先在一个终端启动服务：

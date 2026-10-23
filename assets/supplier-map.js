@@ -4,7 +4,7 @@
     red: { label: '高风险', color: '#ef4444' },
     orange: { label: '需关注', color: '#f59e0b' },
     yellow: { label: '关注', color: '#eab308' },
-    ok: { label: '正常', color: '#10b981' },
+    ok: { label: '正常', color: '#a5b5ac' },
   };
 
   function esc(value) {

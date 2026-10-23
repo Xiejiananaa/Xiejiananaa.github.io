@@ -1082,6 +1082,15 @@ def generate(input_path: Path, output_path: Path, external_path: Path, today: da
             payload["production"] = build_production(materials, actions)
         payload = _json_safe(payload)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        # file:// pages cannot fetch local JSON. Keep JSON authoritative and
+        # emit a compatibility loader for double-click use.
+        js_path = output_path.with_suffix(".js")
+        js_payload = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        js_payload = js_payload.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
+        js_tmp = js_path.with_suffix(js_path.suffix + ".tmp")
+        js_tmp.write_text("window.__DASHBOARD_DATA__ = " + js_payload + ";\n", encoding="utf-8")
+        js_tmp.replace(js_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         tmp = output_path.with_suffix(output_path.suffix + ".tmp")
         tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         tmp.replace(output_path)

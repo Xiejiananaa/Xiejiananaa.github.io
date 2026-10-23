@@ -182,37 +182,88 @@ function setModeChrome() {
   }
 }
 
+function hydrateDashboard(data) {
+  state.data = data;
+  state.mode = data.meta.mode || 'competition';
+  $('#loadingPanel')?.remove();
+  setModeChrome();
+  renderAll();
+  setRoute(routeFromHash(), false);
+}
+
+function loadScriptOnce(src) {
+  const existing = document.querySelector(`script[data-dashboard-source="${src}"]`);
+  if (existing) return existing.dataset.loaded === 'true'
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+      });
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.dashboardSource = src;
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    }, { once: true });
+    script.addEventListener('error', () => reject(new Error('无法加载 ' + src)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+function showDataLoadError(error, fileMode) {
+  const panel = $('#loadingPanel');
+  if (!panel) return;
+  panel.innerHTML = fileMode ? `
+    <div class="empty-state" style="max-width:620px;margin:8vh auto">
+      <strong>无法读取本地数据</strong>
+      当前是在浏览器中直接打开 HTML，浏览器会拦截本地 JSON 读取。<br>
+      请先运行 <code>python scripts/generate_data.py</code> 生成
+      <code>data/dashboard_data.js</code>，然后刷新页面。<br>
+      也可以直接打开：
+      <a href="./dist/供应雷达-分享讨论版.html">单文件分享版</a>。
+    </div>
+  ` : `
+    <div class="empty-state" style="max-width:560px;margin:8vh auto">
+      <strong>无法读取数据文件</strong>
+      请确认已启动本地 HTTP 服务，并生成 <code>data/dashboard_data.json</code>。<br>
+      在项目目录执行：<code>python -m http.server 8765</code><br>
+      然后打开 <code>http://localhost:8765/</code>。
+    </div>
+  `;
+  console.error(error);
+}
+
 async function loadData() {
   if (window.__DASHBOARD_DATA__) {
-    state.data = window.__DASHBOARD_DATA__;
-    state.mode = state.data.meta.mode || 'competition';
-    $('#loadingPanel')?.remove();
-    setModeChrome();
-    renderAll();
-    setRoute(routeFromHash(), false);
+    hydrateDashboard(window.__DASHBOARD_DATA__);
     return;
   }
   const params = new URLSearchParams(location.search);
   state.mode = params.get('mode') === 'internal' ? 'internal' : 'competition';
+  const forceScriptData = params.get('data') === 'script';
+  if (location.protocol === 'file:' || forceScriptData) {
+    const fallbackSource = state.mode === 'internal'
+      ? './data/internal/dashboard_data.js'
+      : './data/dashboard_data.js';
+    try {
+      await loadScriptOnce(fallbackSource);
+      if (!window.__DASHBOARD_DATA__) throw new Error('本地数据桥接文件未提供 __DASHBOARD_DATA__');
+      hydrateDashboard(window.__DASHBOARD_DATA__);
+    } catch (error) {
+      showDataLoadError(error, true);
+    }
+    return;
+  }
   const source = state.mode === 'internal' ? './data/internal/dashboard_data.json' : './data/dashboard_data.json';
   try {
     const response = await fetch(source, { cache: 'no-store' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    state.data = await response.json();
-    $('#loadingPanel').remove();
-    setModeChrome();
-    renderAll();
-    setRoute(routeFromHash(), false);
+    hydrateDashboard(await response.json());
   } catch (error) {
-    console.error(error);
-    $('#loadingPanel').innerHTML = `
-      <div class="empty-state" style="max-width:560px;margin:8vh auto">
-        <strong>无法读取数据文件</strong>
-        请确认已启动本地 HTTP 服务，并生成 <code>data/dashboard_data.json</code>。<br>
-        在项目目录执行：<code>python -m http.server 8765</code><br>
-        然后打开 <code>http://localhost:8765/</code>。
-      </div>
-    `;
+    showDataLoadError(error, false);
   }
 }
 
@@ -556,7 +607,7 @@ function renderOverview() {
       label: '待完成任务',
       value: pendingTotal,
       unit: '项',
-      tone: 'blue',
+      tone: 'neutral',
       foot: '含 ' + review.count + ' 项待复核',
     },
   ];
@@ -579,9 +630,14 @@ function renderOverview() {
   const severePct = counts.t1 / total * 100;
   const priorityPct = priorityCount / total * 100;
   const normalPct = normalCount / total * 100;
-  $('#riskBandNote').textContent = total + ' 个物料页 · ' + actions.length + ' 项补单建议';
+  const riskVerdict = counts.t1
+    ? `今日先处理 ${counts.t1} 项严重物料${priorityCount ? `，再核查 ${priorityCount} 项优先物料` : ''}。`
+    : priorityCount
+      ? `今日有 ${priorityCount} 项优先物料需跟进。`
+      : '当前没有需要升级处置的供应风险。';  $('#riskBandNote').textContent = total + ' 个物料页 · ' + actions.length + ' 项补单建议';
   $('#riskDistributionBand').innerHTML = `
-    <div class="home-risk-stack" role="img" aria-label="风险分档分布">
+    <div class="home-risk-conclusion"><strong>${esc(riskVerdict)}</strong><span>正常 ${normalCount} 项保持中性显示，不进入今日关注队列</span></div>
+    <div class="home-risk-stack" role="img" aria-label="${esc(riskVerdict)}">
       <i class="red" style="width:${severePct.toFixed(3)}%"></i>
       <i class="orange" style="width:${priorityPct.toFixed(3)}%"></i>
       <i class="green" style="width:${normalPct.toFixed(3)}%"></i>
@@ -603,7 +659,7 @@ function renderOverview() {
     const bucketDiff = (bucketOrder[a.decision_bucket] ?? 9) - (bucketOrder[b.decision_bucket] ?? 9);
     if (bucketDiff) return bucketDiff;
     return String(a.must_order_by || '9999-12-31').localeCompare(String(b.must_order_by || '9999-12-31'));
-  }).slice(0, 6);
+  }).slice(0, 5);
 
   $('#focusTaskTable').innerHTML = taskItems.length ? `
     <table class="home-table">
@@ -613,7 +669,7 @@ function renderOverview() {
         const tone = level.includes('紧急') ? 'red' : level.includes('关注') ? 'orange' : 'green';
         const coverage = item.coverage_days == null ? null : Number(item.coverage_days);
         const status = item.decision_bucket === 'overdue' ? '待处理' : item.needs_review ? '待复核' : '待排期';
-        return `<tr data-home-action="${esc(item.key)}"><td><span class="home-badge ${tone}">${esc(level || '未定级')}</span></td><td><div class="home-material"><b>${esc(item.material)}</b><span>${esc(item.description || item.plant)}</span></div></td><td class="home-reason">${esc(item.risk_reason || '—')}</td><td class="home-num ${coverage !== null && coverage <= 3 ? 'red' : coverage !== null && coverage <= 7 ? 'orange' : ''}">${coverage == null ? '—' : coverage.toFixed(1) + ' 天'}</td><td>${esc(item.action_text || '待确认动作')}</td><td class="home-status">${esc(status)}</td></tr>`;
+        return `<tr data-home-action="${esc(item.key)}"><td><span class="home-badge ${tone}">${esc(level || '未定级')}</span></td><td><div class="home-material"><b>${esc(item.material)}</b><span>${esc(item.description || item.plant)}</span></div></td><td class="home-reason">${esc(item.risk_reason || '—')}</td><td class="home-num ${coverage !== null && coverage <= 3 ? 'red' : coverage !== null && coverage <= 7 ? 'orange' : ''}">${coverage == null ? '—' : coverage.toFixed(1) + ' 天'}</td><td class="home-action-cell"><button type="button" class="row-action-trigger" title="${esc(item.action_text || '待确认动作')}">查看处置 <i>→</i></button></td><td class="home-status">${esc(status)}</td></tr>`;
       }).join('')}</tbody>
     </table>
   ` : '<div class="home-empty">今日暂无需要立即动作的任务</div>';

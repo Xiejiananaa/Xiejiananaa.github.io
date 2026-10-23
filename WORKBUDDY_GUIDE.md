@@ -57,6 +57,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Document
 项目目录：D:\Users\22614\Documents\供应链平台
 Python：D:\Users\22614\Documents\供应雷达\.venv\Scripts\python.exe
 公开数据：data\dashboard_data.json
+本地桥接：data\dashboard_data.js（由 generate_data.py 同步生成）
 行情输入：data\external_market.json
 内部数据：data\internal\dashboard_data.json（禁止发布）
 ```
