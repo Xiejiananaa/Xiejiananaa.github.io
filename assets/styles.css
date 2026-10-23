@@ -1922,3 +1922,169 @@ strong,b{font-weight:500}
   .ai-task-create-form{grid-template-columns:1fr}
   .ai-task-create-form .btn{width:100%}
 }
+
+/* ==========================================================
+   Navigation reference pass · deep navy / cyan signal
+   Scope: sidebar and navigation only.
+   ========================================================== */
+.sidebar{
+  background:#071524;
+  border-right:1px solid #17303d;
+  color:#9fb1bf;
+}
+.sidebar-brand{
+  min-height:74px;
+  padding:17px 15px 15px;
+  border-bottom:1px solid rgba(109,151,170,.20);
+}
+.sidebar .brand-mark{
+  width:30px;
+  height:30px;
+  border-radius:7px;
+  background:#35C4E4;
+  color:#FFFFFF;
+}
+.sidebar .brand-mark svg{width:20px;height:20px}
+.sidebar-brand h1{
+  color:#F5F8FB;
+  font-size:var(--fs-h2);
+  font-weight:600;
+  line-height:1.25;
+  letter-spacing:.01em;
+}
+.sidebar-brand p{
+  margin-top:3px;
+  color:#8FA5B8;
+  font-size:var(--fs-xs);
+  font-weight:400;
+  letter-spacing:.02em;
+}
+.sidebar-close{color:#9FB1BF}
+.sidebar-close:hover{background:rgba(46,110,147,.18);border-color:#2B5367;color:#FFFFFF}
+.sidebar-scroll{padding:13px 10px 18px;scrollbar-color:#31566A transparent}
+.side-nav{gap:5px}
+.nav-group-toggle{
+  min-height:42px;
+  grid-template-columns:22px minmax(0,1fr) auto 16px;
+  gap:3px;
+  padding:9px 8px;
+  border:1px solid transparent;
+  border-radius:var(--radius);
+  color:#D8E3EB;
+  background:transparent;
+}
+.nav-group-toggle:hover{
+  background:rgba(46,110,147,.14);
+  color:#FFFFFF;
+}
+.nav-group.active .nav-group-toggle{
+  background:rgba(18,55,70,.72);
+  border-color:rgba(54,192,220,.55);
+  color:#FFFFFF;
+}
+.nav-icon{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  color:#A4B7C5;
+}
+.nav-icon svg{width:16px;height:16px}
+.nav-group-toggle:hover .nav-icon,
+.nav-group.active .nav-icon{color:#46CDEA}
+.nav-group-label{
+  color:#E6EDF3;
+  font-size:var(--fs-h3);
+  font-weight:500;
+  line-height:1.35;
+  letter-spacing:.005em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.nav-group.active .nav-group-label{
+  color:#FFFFFF;
+  font-weight:600;
+}
+.nav-group-toggle .nav-count{
+  min-width:22px;
+  height:19px;
+  padding:0 5px;
+  border-radius:var(--radius-badge);
+  background:rgba(255,255,255,.08);
+  color:#C5D4DE;
+  font-family:var(--sans);
+  font-size:var(--fs-xs);
+  font-weight:500;
+}
+.nav-group.active .nav-count{
+  background:rgba(144,47,55,.68);
+  color:#FFDDE1;
+}
+#navAiCount,#navIntelCount{color:#8297A7;background:transparent}
+.nav-arrow{color:#7890A1}
+.nav-group.open .nav-arrow{color:#4BC9E6}
+.nav-arrow svg{width:10px;height:10px}
+.sidebar .nav-children{margin-left:19px;padding-left:17px}
+.sidebar .nav-children::before{background:#24465A}
+.sidebar .nav-child{
+  min-height:32px;
+  padding:7px 9px 7px 12px;
+  border-left:2px solid transparent;
+  border-radius:0;
+  color:#91A6B6;
+  font-size:var(--fs-sm);
+  font-weight:400;
+  letter-spacing:0;
+}
+.sidebar .nav-child:hover{
+  background:rgba(46,110,147,.14);
+  color:#EAF3F8;
+}
+.sidebar .nav-child.active{
+  background:rgba(31,79,96,.42);
+  border-left-color:#3BC8E6;
+  color:#FFFFFF;
+  font-weight:500;
+}
+.sidebar .nav-child::before,
+.sidebar .nav-child.active::before{display:none}
+.sidebar-footer{
+  padding:11px 15px;
+  border-top:1px solid rgba(109,151,170,.20);
+  background:rgba(4,14,24,.35);
+  color:#8197A8;
+  font-size:var(--fs-xs);
+}
+.sidebar-footer strong{color:#B9C9D4;font-size:var(--fs-xs);font-weight:500}
+.sidebar :focus-visible{outline:2px solid #46CDEA;outline-offset:2px}
+
+/* Navigation specificity guard */
+.sidebar .nav-group-toggle{color:#D8E3EB;background:transparent}
+.sidebar .nav-group-toggle:hover{background:rgba(46,110,147,.14);color:#FFFFFF}
+.sidebar .nav-group.active .nav-group-toggle{
+  background:rgba(18,55,70,.72);
+  border-color:rgba(54,192,220,.55);
+  color:#FFFFFF;
+}
+.sidebar .nav-group-label{color:#E6EDF3;font-size:var(--fs-sm);font-weight:500;line-height:1.35;letter-spacing:0}
+.sidebar .nav-group.active .nav-group-label{color:#FFFFFF;font-weight:600}
+.sidebar .nav-group-toggle .nav-icon{color:#A4B7C5}
+.sidebar .nav-group-toggle:hover .nav-icon,
+.sidebar .nav-group.active .nav-icon{color:#46CDEA}
+.sidebar .nav-group-toggle .nav-count{background:rgba(255,255,255,.08);color:#C5D4DE}
+.sidebar .nav-group.active .nav-count{background:rgba(144,47,55,.68);color:#FFDDE1}
+.sidebar .nav-arrow{color:#7890A1}
+.sidebar .nav-group.open .nav-arrow{color:#4BC9E6}
+
+/* Navigation brand + radius guard */
+.sidebar .brand-mark{background:#35C4E4!important;color:#FFFFFF!important;border-radius:7px!important}
+.sidebar .nav-group-toggle{border-radius:var(--radius)}
+
+/* Navigation width budget: preserve full labels without truncation */
+.sidebar .nav-group-toggle{grid-template-columns:20px minmax(0,1fr) auto 12px;gap:2px;padding:9px 6px}
+.sidebar .nav-icon{width:20px;height:20px;flex:0 0 20px}
+.sidebar .nav-group-toggle .nav-count{min-width:18px;height:18px;padding:0 4px}
+.sidebar .nav-arrow{width:12px;height:12px}
+.sidebar .nav-arrow svg{width:9px;height:9px}
+
+.sidebar .nav-child.active{font-weight:600}
