@@ -1350,38 +1350,154 @@ function renderWarehouse() {
   `;
 }
 
+function normalizeRegionName(value) {
+  return String(value || '').replace(/(维吾尔|壮族|回族|特别行政区|自治区|自治州|省|市)/g, '').trim();
+}
+
+function supplierRiskKey(label) {
+  const text = String(label || '');
+  if (text.includes('高') || text.includes('紧急')) return 'red';
+  if (text.includes('关注')) return 'orange';
+  if (text.includes('低') || text.includes('正常')) return 'ok';
+  return 'yellow';
+}
+
+function riskPriority(key) {
+  return { red: 4, orange: 3, yellow: 2, ok: 1 }[key] || 0;
+}
+
+function buildSupplierMapModel() {
+  const d = state.data;
+  const geo = d.supply.geo || {};
+  const suppliers = d.supply.suppliers.items || [];
+  const cityCoords = new Map((geo.cities || []).map(city => [
+    normalizeRegionName(city.province) + '|' + normalizeRegionName(city.name),
+    city,
+  ]));
+  const cityGroups = new Map();
+  const provinceGroups = new Map();
+
+  suppliers.forEach(supplier => {
+    const province = normalizeRegionName(supplier.region_province);
+    const city = normalizeRegionName(supplier.region_city);
+    const risk = supplierRiskKey(supplier.risk_label);
+    if (province) {
+      const p = provinceGroups.get(province) || { supplierCount: 0, criticalCount: 0, watchCount: 0, orders: 0, missingReceipts: 0, suppliers: [], risks: [] };
+      p.supplierCount += 1;
+      p.criticalCount += risk === 'red' ? 1 : 0;
+      p.watchCount += risk === 'orange' || risk === 'yellow' ? 1 : 0;
+      p.orders += Number(supplier.orders || 0);
+      p.missingReceipts += Number(supplier.missing_receipts || 0);
+      p.suppliers.push(supplier);
+      p.risks.push(risk);
+      provinceGroups.set(province, p);
+    }
+    if (!province || !city) return;
+    const coord = cityCoords.get(province + '|' + city);
+    if (!coord) return;
+    const key = province + '|' + city;
+    const group = cityGroups.get(key) || {
+      id: key,
+      name: coord.name,
+      province: coord.province,
+      lon: Number(coord.lon),
+      lat: Number(coord.lat),
+      supplierCount: 0,
+      orders: Number(coord.orders || 0),
+      missingReceipts: Number(coord.missing_receipts || 0),
+      onTimeValues: [],
+      suppliers: [],
+      risks: [],
+    };
+    group.supplierCount += 1;
+    group.orders += Number(supplier.orders || 0);
+    group.missingReceipts += Number(supplier.missing_receipts || 0);
+    if (Number.isFinite(Number(supplier.on_time_rate))) group.onTimeValues.push(Number(supplier.on_time_rate));
+    group.suppliers.push(supplier);
+    group.risks.push(risk);
+    cityGroups.set(key, group);
+  });
+
+  const cities = [...cityGroups.values()].map(group => {
+    const risk = group.risks.sort((a, b) => riskPriority(b) - riskPriority(a))[0] || 'ok';
+    return {
+      ...group,
+      risk,
+      avgOnTime: group.onTimeValues.length ? group.onTimeValues.reduce((sum, value) => sum + value, 0) / group.onTimeValues.length : null,
+    };
+  }).sort((a, b) => b.supplierCount - a.supplierCount || a.name.localeCompare(b.name, 'zh-CN'));
+
+  const provinces = (geo.provinces || []).map(province => {
+    const group = provinceGroups.get(normalizeRegionName(province.name)) || { suppliers: [], risks: [] };
+    const risk = group.risks.slice().sort((a, b) => riskPriority(b) - riskPriority(a))[0] || 'ok';
+    return {
+      ...province,
+      risk,
+      riskLabel: { red: '高风险', orange: '需关注', yellow: '关注', ok: '正常' }[risk],
+      supplierCount: group.supplierCount || Number(province.supplier_count || 0),
+      criticalCount: group.criticalCount || 0,
+      watchCount: group.watchCount || 0,
+      orders: province.orders || group.orders || 0,
+      missingReceipts: province.missing_receipts || group.missingReceipts || 0,
+      suppliers: group.suppliers || [],
+    };
+  });
+
+  return { cities, provinces, total: geo.total || suppliers.length, located: geo.located || cities.length };
+}
+
+function renderSupplierMapDetail(selection) {
+  const detail = $('#supplierMapDetail');
+  if (!detail) return;
+  const model = buildSupplierMapModel();
+  if (!selection) {
+    detail.hidden = true;
+    detail.innerHTML = '';
+    return;
+  }
+  const list = selection.type === 'city'
+    ? selection.data.suppliers || []
+    : selection.data?.suppliers || [];
+  const title = selection.type === 'city'
+    ? selection.data.name + ' · 城市供应结构'
+    : selection.name + ' · 省级供应结构';
+  detail.hidden = false;
+  detail.innerHTML = `
+    <div class="supplier-map-detail-head"><strong>${esc(title)}</strong><span>${list.length} 家已定位供应商</span></div>
+    <div class="supplier-map-detail-list">${list.slice(0, 8).map(supplier => `<button type="button" data-map-supplier="${esc(supplier.name)}"><span>${esc(supplier.name)}</span><em>${esc(supplier.risk_label)} · 准时率 ${pct(supplier.on_time_rate)} · 缺收货 ${supplier.missing_receipts ?? 0}</em></button>`).join('') || '<div class="empty-state">该区域暂无已定位供应商。</div>'}</div>
+  `;
+  $$('#supplierMapDetail [data-map-supplier]').forEach(button => button.addEventListener('click', () => {
+    const supplier = state.data.supply.suppliers.items.find(item => item.name === button.dataset.mapSupplier);
+    if (supplier) openSupplier(supplier);
+  }));
+}
+
 async function renderChinaMap() {
-  if (!window.echarts) return;
   const geo = state.data.supply.geo;
   if (!geo || !geo.provinces?.length) {
     $('#chinaMap').innerHTML = '<div class="empty-state">暂无地域数据</div>';
     return;
   }
+  if (!window.CHINA_GEO || !window.SUPPLIER_MAP) {
+    $('#chinaMap').innerHTML = '<div class="empty-state">本地 SVG 地图资源加载失败</div>';
+    return;
+  }
   try {
-    if (!state.mapReady) {
-      const map = window.__CHINA_GEO__ || await fetch('./assets/china.geo.json').then(response => {
-        if (!response.ok) throw new Error('map');
-        return response.json();
-      });
-      echarts.registerMap('china-supply', map);
-      state.mapReady = true;
-    }
-    const max = Math.max(...geo.provinces.map(p => p.supplier_count || 0), 1);
-    ensureChart('chinaMap', {
-      ...chartTheme(),
-      tooltip: { trigger: 'item', ...chartTheme().tooltip, formatter: params => `${esc(params.name)}<br/>供应商：${params.value || 0}` },
-      visualMap: { min: 0, max, calculable: false, left: 14, bottom: 12, itemWidth: 8, itemHeight: 90, text: ['多','少'], textStyle: { fontSize: 9, color: '#94a3b8' }, inRange: { color: ['#eef6ff', '#bfdbfe', '#60a5fa', '#2563eb'] } },
-      series: [{
-        type: 'map', map: 'china-supply', roam: false, zoom: 1.08, top: 12, bottom: 20, left: 10, right: 10,
-        itemStyle: { borderColor: '#d7e3f0', borderWidth: .8, areaColor: '#f7fbff' },
-        emphasis: { itemStyle: { areaColor: '#dbeafe' }, label: { show: true, color: '#173b6c', fontSize: 10 } },
-        label: { show: false },
-        data: geo.provinces.map(p => ({ name: p.name, value: p.supplier_count, extra: p })),
-      }],
+    const model = buildSupplierMapModel();
+    const note = $('#geoNote');
+    if (note) note.textContent = '已定位 ' + model.located + ' / ' + model.total + ' · 省级风险聚合';
+    $('#chinaMap').innerHTML = `
+      <div class="sm-map-shell">
+        <div class="sm-map-wrap"><div class="sm-map-tip" role="status" aria-live="polite"></div><div class="sm-map-stage"></div></div>
+      </div>`;
+    const stage = $('#chinaMap .sm-map-stage');
+    stage.innerHTML = window.SUPPLIER_MAP.buildMap(model);
+    window.SUPPLIER_MAP.bindMap($('#chinaMap'), model, {
+      onSelect: selection => renderSupplierMapDetail(selection),
     });
   } catch (error) {
     console.error(error);
-    $('#chinaMap').innerHTML = '<div class="empty-state">地图底图加载失败</div>';
+    $('#chinaMap').innerHTML = '<div class="empty-state">地图渲染失败</div>';
   }
 }
 
@@ -2060,6 +2176,64 @@ function simulateSupply(params) {
   };
 }
 
+function simulationWindow(days = 10) {
+  const start = new Date(String(state.data.meta.as_of || state.data.meta.generated_at || '').slice(0, 10) + 'T00:00:00');
+  const validStart = Number.isNaN(start.getTime()) ? new Date() : start;
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(validStart);
+    date.setDate(date.getDate() + index);
+    return {
+      index,
+      date,
+      label: String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+      weekday: ['日', '一', '二', '三', '四', '五', '六'][date.getDay()],
+      weekend: date.getDay() === 0 || date.getDay() === 6,
+    };
+  });
+}
+
+function simulationDayOffset(value, fallback = 0) {
+  if (!value) return fallback;
+  const target = new Date(String(value).slice(0, 10) + 'T00:00:00');
+  const start = new Date(String(state.data.meta.as_of || state.data.meta.generated_at || '').slice(0, 10) + 'T00:00:00');
+  if (Number.isNaN(target.getTime()) || Number.isNaN(start.getTime())) return fallback;
+  return Math.round((target - start) / 86400000);
+}
+
+function simulationGanttHtml(current, base) {
+  const days = simulationWindow(10);
+  const baseMap = new Map((base.rows || []).map(row => [row.key, row]));
+  let tasks = (current.rows || []).filter(row => Number(row.sim_gap || 0) > 0).slice(0, 7);
+  if (tasks.length < 5) {
+    tasks = (current.rows || []).slice().sort((a, b) => Number(a.projected_days ?? 99999) - Number(b.projected_days ?? 99999)).slice(0, 7);
+  }
+  if (!tasks.length) return '<div class="empty-state">当前情景没有可展示的模拟任务。</div>';
+  const rows = tasks.map((row, index) => {
+    const baseRow = baseMap.get(row.key) || row;
+    const startOffset = Math.max(0, Math.min(days.length - 1, simulationDayOffset(row.must_order_by, index % 4)));
+    const simulatedLead = Math.max(1, Math.ceil(Number(row.sim_lead || row.avg_lead_days || 1)));
+    const baseLead = Math.max(1, Math.ceil(Number(baseRow.sim_lead || baseRow.avg_lead_days || 1)));
+    const simulatedLength = Math.max(1, Math.min(days.length - startOffset, simulatedLead));
+    const baselineLength = Math.max(1, Math.min(days.length - startOffset, baseLead));
+    const tier = row.sim_tier || simTier(row.projected_days);
+    const barClass = tier === 't1' ? 'risk' : tier === 't2' || tier === 't3' ? 'warn' : 'ok';
+    const showBaseline = state.simulation.demand !== 1 || state.simulation.delay !== 0 || state.simulation.safety !== 1;
+    return `<div class="sim-gantt-row">
+      <div class="sim-gantt-name"><strong>${esc(row.material)}</strong><span>${esc(row.plant)} · ${esc(row.supplier)}</span></div>
+      <div class="sim-gantt-lane">
+        <div class="sim-gantt-grid">${days.map(day => `<i class="${day.weekend ? 'weekend' : ''}"></i>`).join('')}</div>
+        ${showBaseline ? `<div class="sim-gantt-bar baseline" style="left:${(startOffset / days.length * 100).toFixed(2)}%;width:${(baselineLength / days.length * 100).toFixed(2)}%" title="基准计划：${esc(row.material)} · ${baseLead} 天"></div>` : ''}
+        <button type="button" class="sim-gantt-bar ${barClass}" data-sim-task="${esc(row.key)}" style="left:${(startOffset / days.length * 100).toFixed(2)}%;width:${(simulatedLength / days.length * 100).toFixed(2)}%" title="${esc(row.material)} · ${esc(row.description || '')} · 模拟 ${simulatedLead} 天 · 缺口 ${compact(row.sim_gap, 0)} kg"><span>${esc(row.material)}</span><em>${simulatedLead}天</em></button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="sim-gantt-scroll"><div class="sim-gantt-inner">
+    <div class="sim-gantt-axis"><div class="sim-gantt-axis-name">物料 / 工厂</div><div class="sim-gantt-axis-days">${days.map(day => `<div class="${day.weekend ? 'weekend' : ''} ${day.index === 0 ? 'today' : ''}"><span>周${day.weekday}</span><b>${day.label}</b></div>`).join('')}</div></div>
+    ${rows}
+    <div class="sim-gantt-today" style="left:calc(150px + (100% - 150px) * ${(0.5 / days.length).toFixed(4)})"></div>
+  </div></div>`;
+}
+
 function renderProduction() {
   if (!$('#productionPlan')) return;
   if (!state.simulation) state.simulation = { horizon: 14, demand: 1, delay: 0, safety: 1 };
@@ -2075,7 +2249,15 @@ function renderProduction() {
       <div class="sim-field"><label>供应商延迟</label><select id="simDelay"><option value="0" ${state.simulation.delay === 0 ? 'selected' : ''}>不延迟</option><option value="3" ${state.simulation.delay === 3 ? 'selected' : ''}>+3 天</option><option value="7" ${state.simulation.delay === 7 ? 'selected' : ''}>+7 天</option><option value="14" ${state.simulation.delay === 14 ? 'selected' : ''}>+14 天</option></select></div>
       <div class="sim-field"><label>安全库存策略</label><select id="simSafety"><option value="1" ${state.simulation.safety === 1 ? 'selected' : ''}>当前</option><option value="1.25" ${state.simulation.safety === 1.25 ? 'selected' : ''}>提高 25%</option><option value="1.5" ${state.simulation.safety === 1.5 ? 'selected' : ''}>提高 50%</option></select></div>
     </div>
-    <p class="side-note">推演用当前平均日销量、到货天数和安全库存重算情景缺口，不读取生产计划或工单。</p>
+    <p class="side-note">推演用当前平均日销量、到货天数和安全库存重算情景缺口；以下时间轴为供应侧模拟排程，不写入正式工单。</p>
+    <section class="sim-progress-card" id="simulationProgress">
+      <div class="sim-progress-head">
+        <div><span class="eyebrow">Simulation progress</span><h3>模拟计划进度</h3><p>需求倍数 ${state.simulation.demand}× · 供应商延迟 +${state.simulation.delay} 天 · 当前缺口 ${current.gapCount} 项</p></div>
+        <button class="text-btn" type="button" id="simGanttRunBtn">重新计算</button>
+      </div>
+      <div class="sim-gantt">${simulationGanttHtml(current, base)}</div>
+      <div class="sim-progress-legend"><span><i class="ok"></i>模拟计划</span><span><i class="warn"></i>需关注</span><span><i class="risk"></i>缺料风险</span><span><i class="baseline"></i>基准计划</span><span class="sim-progress-note">按物料缺口与预计采购提前期生成</span></div>
+    </section>
   `;
   ['simHorizon','simDemand','simDelay','simSafety'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', () => {
@@ -2087,6 +2269,17 @@ function renderProduction() {
       };
       renderProduction();
     });
+  });
+  $$('#simulationProgress [data-sim-task]').forEach(button => button.addEventListener('click', () => {
+    const material = state.data.supply.materials.find(item => item.key === button.dataset.simTask);
+    if (material) openMaterial(material);
+  }));
+  $('#simGanttRunBtn')?.addEventListener('click', () => {
+    const card = $('#simulationProgress');
+    const button = $('#simGanttRunBtn');
+    if (card) card.classList.add('recalculating');
+    if (button) { button.disabled = true; button.textContent = '计算中…'; }
+    setTimeout(() => renderProduction(), 420);
   });
   $('#demandRecalc').innerHTML = `
     <div class="panel-head"><div><span class="eyebrow">Demand recalculation</span><h3>需求重算</h3></div><span class="panel-note">需求倍数 ${state.simulation.demand}× · 延迟 +${state.simulation.delay} 天</span></div>

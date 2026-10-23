@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>供应雷达 · 供应链决策工作台</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="./assets/styles.css?v=20261022-workbuddy">
-<script src="./assets/echarts.min.js?v=20261022-workbuddy" defer></script>
-<script src="./assets/app.js?v=20261022-workbuddy" defer></script>
+<link rel="stylesheet" href="./assets/styles.css?v=20261023-map-progress4">
+<script src="./assets/china-map-geo.js?v=20261023-map-progress4" defer></script>
+<script src="./assets/supplier-map.js?v=20261023-map-progress4" defer></script>
+<script src="./assets/echarts.min.js?v=20261023-map-progress4" defer></script>
+<script src="./assets/app.js?v=20261023-map-progress4" defer></script>
 </head>
 <body>
 <div class="app-shell" id="appShell">
@@ -169,7 +171,8 @@
         <section class="home-kpis" id="supplierKpis"></section>
         <section class="panel" id="supplierRegions" style="margin-bottom:14px"></section>
         <section class="module-section" id="supplier-portrait"><div class="module-heading"><span>03.1</span><div><h3>供应商画像</h3><p>按真实交付数据生成画像，不补造质量与产能字段。</p></div></div><section class="panel supplier-profile-panel"><div class="panel-head"><div><span class="eyebrow">Supplier portrait</span><h3>供应商画像 · 重点 6 家</h3></div><div class="segmented compact" id="supplierGroups" role="tablist"><button class="seg active" data-group="overall" role="tab">综合表现</button><button class="seg" data-group="ontime" role="tab">准时率</button><button class="seg" data-group="scale" role="tab">交付规模</button><button class="seg" data-group="missing" role="tab">缺收货</button></div></div><div class="supplier-card-grid" id="supplierCards"></div></section></section>
-        <section class="module-section" id="supplier-map"><div class="module-heading"><span>03.2 / 03.3</span><div><h3>全国供应地图与交付绩效</h3><p>地域分布和交付风险放在同一业务上下文里看。</p></div></div><div class="supply-grid"><section class="panel map-panel"><div class="panel-head"><div><span class="eyebrow">Supplier geography</span><h3>供应商地域分布</h3></div><span class="panel-note" id="geoNote">--</span></div><div class="chart map-chart" id="chinaMap"></div><div class="map-legend"><span><i class="legend-dot low"></i>供应商密度</span><span><i class="legend-dot watch"></i>缺收货</span><span class="map-method">按名称识别，不猜测</span></div></section><section class="panel"><div class="panel-head"><div><span class="eyebrow">Delivery watch</span><h3>交付风险榜</h3></div><button class="text-btn" id="supplierAllBtn">全部供应商</button></div><div class="rank-list" id="supplierRank"></div></section></div></section>
+        <section class="module-section" id="supplier-map"><div class="module-heading"><span>03.2 / 03.3</span><div><h3>全国供应地图与交付绩效</h3><p>地域分布和交付风险放在同一业务上下文里看。</p></div></div><div class="supply-grid"><section class="panel map-panel supplier-map-panel"><div class="panel-head"><div><span class="eyebrow">Supplier geography</span><h3>供应商风险地图</h3></div><span class="panel-note" id="geoNote">--</span></div><div class="chart map-chart" id="chinaMap"></div>
+            <div class="supplier-map-detail" id="supplierMapDetail" hidden></div><div class="map-legend supplier-map-legend"><span><i class="sm-legend-dot red"></i>高风险</span><span><i class="sm-legend-dot amber"></i>需关注</span><span><i class="sm-legend-dot green"></i>正常</span><span class="map-method">点击省份或城市查看供应结构 · 按名称识别</span></div></section><section class="panel"><div class="panel-head"><div><span class="eyebrow">Delivery watch</span><h3>交付风险榜</h3></div><button class="text-btn" id="supplierAllBtn">全部供应商</button></div><div class="rank-list" id="supplierRank"></div></section></div></section>
         <section class="module-section" id="supplier-delivery"><div class="module-heading"><span>03.3</span><div><h3>交付绩效明细</h3><p>准时率、延迟、周期和缺收货均来自真实数据。</p></div></div><section class="panel"><div class="panel-head"><div><span class="eyebrow">Supplier center</span><h3>供应商中心</h3></div><div class="toolbar"><label class="search-box"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.5"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="supplierSearch" type="search" placeholder="搜索供应商"></label><select id="supplierRiskFilter" class="select"><option value="">全部风险</option><option value="低风险">低风险</option><option value="需关注">需关注</option><option value="高风险">高风险</option></select></div></div><div class="table-wrap"><table class="data-table" id="supplierTable"></table></div></section></section>
         <section class="module-section" id="supplier-warehouse"><div class="module-heading"><span>03.4 / 03.5</span><div><h3>库存分布与资金库龄</h3><p>从实物分布到资金占用和呆滞风险。</p></div></div><section class="warehouse-section" id="warehouseSection"></section></section>
       </section>
