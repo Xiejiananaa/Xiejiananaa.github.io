@@ -95,12 +95,12 @@ data\external_market.json
   "source": "WorkBuddy",
   "items": [
     {
-      "name": "环氧乙烷",
-      "category": "基础化工",
-      "price": 6500,
-      "unit": "元/吨",
-      "change_pct": 1.2,
-      "change": 78,
+      "name": "布伦特原油",
+      "category": "能源",
+      "price": 91.62,
+      "unit": "美元/桶",
+      "change_pct": 0.66,
+      "change": 0.6,
       "date": "2026-10-22",
       "source": "公开资讯来源",
       "url": "https://example.com/article",
@@ -126,6 +126,36 @@ data\external_market.json
 ```powershell
 & $PY -m json.tool data\external_market.json > $null
 if ($LASTEXITCODE -ne 0) { throw "external_market.json 不是有效 JSON" }
+```
+
+### 4.1 比赛页面联动规则
+
+比赛精简版的“原料行情”默认展示 3 张重点卡：
+
+- `布伦特原油`
+- `乙烯`
+- `苯乙烯`
+
+其他原料会按涨跌幅绝对值进入“其他关注”。为确保页面稳定，WorkBuddy 还应尽量维护以下优先品种：
+
+```text
+布伦特原油、乙烯、苯乙烯、丙烯、甲醇、乙二醇、棕榈油、丙烯酸、液碱、十二烷基苯磺酸钠
+```
+
+注意：
+
+1. 页面不会直接读取 `external_market.json`，而是读取 `generate_data.py` 合并后的 `data/dashboard_data.json`。所以写完行情后必须重新执行生成脚本。
+2. 7 天走势由前端根据 `price` 和 `change_pct` 动态计算，WorkBuddy 不需要写入 forecast 字段。
+3. `price` 必须使用最新有效价格；`change_pct` 使用百分数数值，例如 `-3.45` 表示 -3.45%。
+4. 无法确认的 `change_pct` 可以写 `null`，页面会按横盘展示，但不能伪造。
+5. 重点品种名称必须与上面完全一致；改名后卡片会消失或进入备用排序。
+6. `unit` 必须与价格口径一致，例如 `元/吨` 或 `美元/桶`。
+
+写入完成后执行页面契约校验：
+
+```powershell
+& $PY scripts\validate_external_market.py --input data\external_market.json --strict-featured
+if ($LASTEXITCODE -ne 0) { throw "外部行情页面契约校验失败" }
 ```
 
 ## 5. 动作二：生成并校验 dashboard_data.json
@@ -306,6 +336,7 @@ dist\供应雷达-分享讨论版.html
 首次启用前执行：
 
 ```powershell
+& $PY scripts\validate_external_market.py --input data\external_market.json --strict-featured
 & $PY scripts\generate_data.py --mode competition
 & $PY scripts\validate_dashboard_data.py --mode competition
 & $PY scripts\build_share_html.py

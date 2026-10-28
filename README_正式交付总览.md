@@ -237,6 +237,9 @@ data\external_market.json
 - 无法确认的数据写 `null`，不要伪造。
 - 抓取失败时保留旧文件。
 - 写入后必须检查 JSON 可解析。
+- 比赛重点品种保持名称不变：`布伦特原油`、`乙烯`、`苯乙烯`。
+- `change_pct` 使用百分数数值；7 天走势由前端动态计算，不写伪造 forecast。
+- 写入后执行 `scripts\validate_external_market.py --strict-featured`。
 
 ### 动作二：执行计算与校验
 
@@ -247,6 +250,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Document
 或分步：
 
 ```powershell
+& $PY scripts\validate_external_market.py --input data\external_market.json --strict-featured
 & $PY scripts\generate_data.py --mode competition
 & $PY scripts\validate_dashboard_data.py --mode competition
 ```

@@ -3,15 +3,51 @@
   "source": "WorkBuddy",
   "items": [
     {
-      "name": "环氧乙烷",
-      "category": "基础化工",
-      "price": 6500,
-      "unit": "元/吨",
-      "change_pct": 1.2,
-      "change": 78,
+      "name": "布伦特原油",
+      "category": "能源",
+      "price": 91.62,
+      "unit": "美元/桶",
+      "change_pct": 0.66,
+      "change": 0.6,
       "date": "2026-10-22",
       "source": "公开资讯来源",
-      "url": "https://example.com/article",
+      "url": "https://example.com/brent",
+      "summary": "示例数据，仅供查看字段结构。"
+    },
+    {
+      "name": "乙烯",
+      "category": "基础化工",
+      "price": 8925,
+      "unit": "元/吨",
+      "change_pct": 0,
+      "change": 0,
+      "date": "2026-10-22",
+      "source": "公开资讯来源",
+      "url": "https://example.com/ethylene",
+      "summary": "示例数据，仅供查看字段结构。"
+    },
+    {
+      "name": "苯乙烯",
+      "category": "基础化工",
+      "price": 11480,
+      "unit": "元/吨",
+      "change_pct": 0.26,
+      "change": 30,
+      "date": "2026-10-22",
+      "source": "公开资讯来源",
+      "url": "https://example.com/styrene",
+      "summary": "示例数据，仅供查看字段结构。"
+    },
+    {
+      "name": "丙烯酸",
+      "category": "基础化工",
+      "price": 8400,
+      "unit": "元/吨",
+      "change_pct": -3.45,
+      "change": -300,
+      "date": "2026-10-22",
+      "source": "公开资讯来源",
+      "url": "https://example.com/acrylic-acid",
       "summary": "示例数据，仅供查看字段结构。"
     }
   ],

@@ -1670,11 +1670,29 @@ function buildMarketCrossSignals(items) {
     const change = normalizeMarketChange(signal.item);
     const direction = marketChangeLabel(change);
     let conclusion = '外部信号暂稳，继续按内部补货节奏执行。';
-    if (signal.criticalCount > 0 && change !== null && change > 0.2) conclusion = '外部成本上行且内部存在严重缺料，建议优先锁价并确认交期。';
-    else if (signal.criticalCount > 0) conclusion = '外部价格未明显上涨，内部缺口是主矛盾，优先补货而非等待价格。';
-    else if (change !== null && change > 0.2) conclusion = '内部暂无严重缺口，但成本有上行迹象，建议控制追高并关注替代。';
-    else if (change !== null && change < -0.2) conclusion = '外部价格回落，成本压力缓和，可按计划采购并择机锁价。';
-    return { ...signal, change, direction, conclusion };
+    let action = '按计划执行';
+    let tone = 'calm';
+    if (signal.criticalCount > 0 && change !== null && change > 0.2) {
+      conclusion = '外部成本上行且内部存在严重缺料，建议优先锁价并确认交期。';
+      action = '优先锁价，同步确认交期';
+      tone = 'critical';
+    } else if (signal.criticalCount > 0) {
+      conclusion = '外部价格未明显上涨，内部缺口是主矛盾，优先补货而非等待价格。';
+      action = '优先保供，不等待降价';
+      tone = 'critical';
+    } else if (change !== null && change > 0.2) {
+      conclusion = '内部暂无严重缺口，但成本有上行迹象，建议控制追高并关注替代。';
+      action = '控制追高，关注替代';
+      tone = 'watch';
+    } else if (change !== null && change < -0.2) {
+      conclusion = '外部价格回落，成本压力缓和，可按计划采购并择机锁价。';
+      action = '按计划采购，择机锁价';
+      tone = 'watch';
+    } else if (signal.priorityCount > 0) {
+      action = '保持关注，优先处理预警';
+      tone = 'watch';
+    }
+    return { ...signal, change, direction, conclusion, action, tone };
   }).sort((a, b) => b.criticalCount - a.criticalCount || (Math.abs(b.change ?? 0) - Math.abs(a.change ?? 0)) || b.materials.length - a.materials.length);
   const validChanges = items.map(normalizeMarketChange).filter(v => v !== null);
   const stats = {
@@ -1689,7 +1707,7 @@ function buildMarketCrossSignals(items) {
   return { signals, stats };
 }
 const MARKET_SHOWCASE_NAMES = ['布伦特原油', '乙烯', '丙烯', '甲醇', '乙二醇', '苯乙烯', '棕榈油', '丙烯酸', '液碱', '十二烷基苯磺酸钠'];
-const MARKET_FEATURED_NAMES = ['布伦特原油', '乙烯', '丙烯', '苯乙烯'];
+const MARKET_FEATURED_NAMES = ['布伦特原油', '乙烯', '苯乙烯'];
 const MARKET_PROJECTION_DAYS = ['今日', '+1', '+2', '+3', '+4', '+5', '+6'];
 
 function marketShowcaseItems(items, limit = 10) {
@@ -1709,7 +1727,7 @@ function marketShowcaseItems(items, limit = 10) {
 function marketFeaturedItems(items) {
   const byName = new Map(items.map(item => [String(item.name || ''), item]));
   const picked = MARKET_FEATURED_NAMES.map(name => byName.get(name)).filter(Boolean);
-  return (picked.length ? picked : items.slice(0, 4)).slice(0, 4);
+  return (picked.length ? picked : items.slice(0, 3)).slice(0, 3);
 }
 
 function marketProjectionSeries(item) {
@@ -1793,7 +1811,6 @@ function marketProjectionCardHtml(item, index) {
     <div class="market-mini-head"><strong>${esc(item.name)}</strong><span class="market-change-pill ${direction.cls}">${marketChangeText(item.change_pct)}</span></div>
     <div class="market-mini-price"><strong>${num(item.price, digits)}</strong><span>${esc(unit)}</span></div>
     <div class="market-mini-chart">${marketProjectionSvg(item, index)}</div>
-    <div class="market-mini-days">${series.map((point, pointIndex) => `<div><span>${pointIndex === 0 ? '今日' : `+${pointIndex}天`}</span><b>${num(point.value, digits)}</b></div>`).join('')}</div>
     <div class="market-mini-foot"><span>规则外推区间 <b>${num(min, digits)}–${num(max, digits)} ${esc(unit)}</b></span><em class="${direction.cls}">${trendLabel}</em></div>
   </article>`;
 }
@@ -1803,10 +1820,51 @@ function marketWatchItemHtml(item) {
   const digits = marketPriceDigits(item);
   return `<div class="market-watch-item"><div><strong>${esc(item.name)}</strong><span>${esc(item.category || '未分类')}</span></div><div><b>${num(item.price, digits)}</b><em class="${direction.cls}">${marketChangeText(item.change_pct)}</em></div></div>`;
 }
+function marketImpactChainHtml(signals, actionText) {
+  const focus = signals.slice(0, 2);
+  if (!focus.length) return '<div class="market-impact-section"><div class="market-impact-head"><div><span class="eyebrow">Price impact chain</span><h4>原料影响链</h4></div><span class="panel-note">暂未匹配内部物料</span></div><div class="cross-empty">当前行情没有形成可核实的外部→内部影响链。</div></div>';
+  const rows = focus.map((signal, index) => {
+    const names = signal.materials.slice(0, 3).map(item => item.description || item.material).join(' / ');
+    const coverage = signal.coverageMin == null ? '—' : `${num(signal.coverageMin, 1)} 天`;
+    return `<article class="market-impact-row ${signal.tone}">
+      <div class="market-impact-row-head"><span class="market-impact-index">${String(index + 1).padStart(2, '0')}</span><div class="market-impact-name"><strong>${esc(signal.label)}</strong><span>${esc(signal.item.name)} · ${esc(signal.item.category || '未分类')}</span></div><span class="market-direction ${signal.direction.cls}">${marketChangeText(signal.item.change_pct)}</span></div>
+      <div class="market-impact-flow"><div><span>关联物料</span><strong>${signal.materials.length} 项</strong></div><i>→</i><div><span>严重 / 优先</span><strong>${signal.criticalCount} / ${signal.priorityCount}</strong></div><i>→</i><div><span>最低覆盖</span><strong>${coverage}</strong></div></div>
+      <p><span>样例：</span>${esc(names || '暂无物料名称')}</p>
+    </article>`;
+  }).join('');
+  return `<div class="market-impact-section">
+    <div class="market-impact-head"><div><span class="eyebrow">Price impact chain</span><h4>原料影响链</h4></div><span class="panel-note">外部价格 → 内部供应</span></div>
+    <div class="market-impact-list">${rows}</div>
+    <div class="market-impact-action"><span>今日采购关注</span><strong>${esc(actionText)}</strong></div>
+  </div>`;
+}
+
+function marketJudgmentCardHtml(signal, index) {
+  const names = signal.materials.slice(0, 3).map(item => item.description || item.material).join(' / ');
+  const coverage = signal.coverageMin == null ? '—' : `${num(signal.coverageMin, 1)} 天`;
+  return `<article class="intel-judgment-card ${signal.tone}">
+    <div class="intel-judgment-head"><span class="intel-judgment-index">${String(index + 1).padStart(2, '0')}</span><div><h4>${esc(signal.label)}</h4><p>${esc(signal.item.name)} · ${esc(signal.item.category || '未分类')}</p></div><span class="market-direction ${signal.direction.cls}">${signal.direction.label} ${marketChangeText(signal.item.change_pct)}</span></div>
+    <div class="intel-judgment-metrics">
+      <div><span>外部行情</span><strong>${marketPriceText(signal.item)}</strong></div>
+      <div><span>关联物料</span><strong>${signal.materials.length} 项</strong></div>
+      <div><span>内部风险</span><strong>严重 ${signal.criticalCount} · 优先 ${signal.priorityCount}</strong></div>
+    </div>
+    <div class="intel-judgment-decision"><span>判断</span><strong>${esc(signal.action)}</strong><p>${esc(signal.conclusion)}</p></div>
+    <details class="intel-judgment-details"><summary>查看判断依据</summary><p>样例物料：${esc(names || '暂无')}；最低库存覆盖：${coverage}。</p></details>
+  </article>`;
+}
 function renderIntelligence() {
   const d = state.data;
   const market = d.supply.external_market;
   const marketItems = Array.isArray(market.items) ? market.items : [];
+  const cross = buildMarketCrossSignals(marketItems);
+  const externalUpRisk = cross.signals.filter(signal => signal.criticalCount > 0 && signal.change !== null && signal.change > 0.2);
+  const externalDownGroups = cross.signals.filter(signal => signal.change !== null && signal.change < -0.2);
+  const leftActionText = externalUpRisk.length
+    ? '先锁关键上行链，再处理回落链'
+    : externalDownGroups.length
+      ? '回落链按计划采购，严重档先保供'
+      : '内部补货优先，外部行情保持观察';
   $('#marketStatus').textContent = market.available ? 'WorkBuddy 已接入' : '等待 WorkBuddy 接入';
   $('#marketStatus').className = 'status-pill ' + (market.available ? 'live' : 'subtle');
 
@@ -1815,12 +1873,14 @@ function renderIntelligence() {
     const featured = marketFeaturedItems(marketItems);
     const featuredNames = new Set(featured.map(item => item.name));
     const watchItems = items.filter(item => !featuredNames.has(item.name));
+    const watchFocus = watchItems.slice().sort((a, b) => Math.abs(normalizeMarketChange(b) ?? 0) - Math.abs(normalizeMarketChange(a) ?? 0)).slice(0, 4);
     $('#marketPanel').innerHTML = `
-      <div class="panel-head"><div><span class="eyebrow">External market</span><h3>核心原料未来 7 天</h3></div><div class="market-panel-meta"><span class="market-panel-tag">参考信息</span><span class="panel-note">${items.length} 个品种 · ${esc(market.updated_at || '日期待同步')}</span></div></div>
+      <div class="panel-head"><div><span class="eyebrow">External market</span><h3>核心原料 7 天走势</h3></div><div class="market-panel-meta"><span class="market-panel-tag">参考信息</span><span class="panel-note">${items.length} 品种 · 涨 ${cross.stats.risingCount} / 落 ${cross.stats.fallingCount} · ${esc(market.updated_at || '日期待同步')}</span></div></div>
       <div class="market-feature-grid">${featured.map((item, index) => marketProjectionCardHtml(item, index)).join('')}</div>
-      ${watchItems.length ? `<div class="market-watchlist"><div class="market-watch-head"><span>其他核心原料</span><span>当前价 · 涨跌</span></div><div class="market-watch-grid">${watchItems.map(marketWatchItemHtml).join('')}</div></div>` : ''}
-      <p class="side-note market-method-note"><strong>读法：</strong>圆点为今日价格，虚线及阴影为按当前涨跌幅平滑外推的未来 7 天路径；仅用于观察方向，不是真实预测、报价或采购承诺。内部库存仍主导决策。</p>
-      <p class="side-note">数据来源：WorkBuddy 写入的 external_market.json。页面只展示，不在此处改写行情。</p>
+      ${watchFocus.length ? `<div class="market-watchlist"><div class="market-watch-head"><span>其他关注</span><span>按波动幅度选取</span></div><div class="market-watch-grid">${watchFocus.map(marketWatchItemHtml).join('')}</div></div>` : ''}
+      ${marketImpactChainHtml(cross.signals, leftActionText)}
+      <p class="side-note market-method-note"><strong>说明：</strong>圆点为今日价，虚线为规则外推；用于观察方向，不构成预测或采购承诺。</p>
+      <p class="side-note">来源：WorkBuddy · external_market.json</p>
     `;
   } else {
     $('#marketPanel').innerHTML = `
@@ -1835,11 +1895,8 @@ function renderIntelligence() {
 
   const counts = tierCounts(d.supply.materials);
   const topSupplier = [...d.supply.suppliers.items].sort((a, b) => (a.delivery_health_score ?? 0) - (b.delivery_health_score ?? 0))[0];
-  const cross = buildMarketCrossSignals(marketItems);
   const stats = cross.stats;
-  const crossTop = cross.signals.slice(0, 3);
-  const externalUpRisk = cross.signals.filter(signal => signal.criticalCount > 0 && signal.change !== null && signal.change > 0.2);
-  const externalDownGroups = cross.signals.filter(signal => signal.change !== null && signal.change < -0.2);
+  const crossTop = cross.signals.slice(0, 2);
   const topExternal = marketItems
     .filter(item => normalizeMarketChange(item) !== null)
     .slice()
@@ -1851,43 +1908,58 @@ function renderIntelligence() {
   const externalFocus = topExternal.length
     ? topExternal.map(item => `${item.name} ${marketChangeText(item.change_pct)}`).join('；')
     : '暂无可比较的外部行情';
-  const crossTopHtml = crossTop.length ? crossTop.map(signal => {
-    const names = signal.materials.slice(0, 3).map(item => item.description || item.material).join(' / ');
-    return `<div class="cross-signal-item">
-      <div class="cross-signal-head"><strong>${esc(signal.label)}</strong><span class="market-direction ${signal.direction.cls}">${signal.direction.label} ${marketChangeText(signal.item.change_pct)}</span></div>
-      <p>${esc(signal.conclusion)}</p>
-      <div class="cross-signal-meta"><span>外部：${esc(signal.item.name)} ${marketPriceText(signal.item)}</span><span>关联 ${signal.materials.length} 项物料</span><span>严重 ${signal.criticalCount}</span><span>样例：${esc(names)}</span></div>
-    </div>`;
-  }).join('') : '<div class="cross-empty">当前行情未能匹配到内部产品组，暂不生成外部结论。</div>';
+  const priorityLabels = crossTop.filter(signal => signal.tone === 'critical').map(signal => signal.label).slice(0, 2);
+  const decisionHeadline = !market.available
+    ? '外部行情未接入，当前只按内部供应做判断。'
+    : externalUpRisk.length
+      ? `成本上行叠加内部缺口，先处理${priorityLabels.length ? ' ' + priorityLabels.join('、') : '关键上行链'}。`
+      : externalDownGroups.length
+        ? '外部成本压力缓和，但内部断料仍是主矛盾。'
+        : '外部行情暂稳，优先处理内部严重与预警物料。';
+  const decisionTone = externalUpRisk.length ? 'critical' : externalDownGroups.length ? 'watch' : 'calm';
   let combinedAdvice = '优先处理内部严重档和优先档，再按补货建议执行。';
   if (!market.available) {
-    combinedAdvice = `当前外部行情未接入，先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项，不能据此判断提前锁价。`;
+    combinedAdvice = `先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项；外部未接入，不作价格判断。`;
   } else if (externalUpRisk.length) {
-    combinedAdvice = `外部上行与内部高风险同时出现：${externalUpRisk.map(signal => signal.label).join('、')}，建议先锁定关键物料价格和交期，再处理其余补货。`;
+    combinedAdvice = `外部上行叠加内部高风险，先锁定${externalUpRisk.map(signal => signal.label).join('、')}的价格和交期。`;
   } else if (externalDownGroups.length) {
-    combinedAdvice = `外部价格回落的链条包括 ${externalDownGroups.map(signal => signal.label).join('、')}；可对相关物料按计划采购、择机锁价，但严重档仍应先保供。`;
+    combinedAdvice = `外部成本压力缓和，${externalDownGroups.map(signal => signal.label).join('、')}可按计划采购、择机锁价；严重缺口仍先保供。`;
   } else if (stats.matchedMaterials) {
-    combinedAdvice = `外部涨跌暂未形成明显成本压力，内部缺口仍是主矛盾；优先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项。`;
+    combinedAdvice = `外部未形成明显成本压力，优先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项。`;
   }
+  const crossTopHtml = crossTop.length
+    ? crossTop.map((signal, index) => marketJudgmentCardHtml(signal, index)).join('')
+    : '<div class="cross-empty">当前行情未能匹配到内部产品组，暂不生成外部结论。</div>';
+  const internalEvidence = `${d.supply.materials.length} 项物料：严重 ${counts.t1} / 预警 ${counts.t2} / 临期 ${counts.t3} / 正常 ${counts.t4}；${d.supply.purchase_orders.summary.overdue} 张 PO 逾期，${d.data_quality.derived.missing_mb51_receipts ?? 0} 条缺 MB51 收货记录。`;
+  const supplierEvidence = topSupplier
+    ? `${topSupplier.name} 当前交付健康分最低，准时率 ${pct(topSupplier.on_time_rate)}，缺收货 ${topSupplier.missing_receipts} 单。`
+    : '暂无供应商数据。';
+  const externalEvidence = `${externalHeadline}${market.available ? `重点波动：${externalFocus}。` : ''}`;
+  const matchEvidence = `已匹配 ${stats.matchedMaterials} 项内部物料、${stats.matchedGroups} 条供应相关外部行情；未匹配物料不参与外部结论。`;
   $('#intelSummary').innerHTML = `
     <div class="panel-head"><div><span class="eyebrow">Internal + market signals</span><h3>内外结合判断</h3></div><span class="badge blue">规则交叉</span></div>
-    <div class="mini-metric-grid" style="margin-bottom:12px">
-      <div class="mini-metric"><span>严重档物料</span><strong style="color:var(--t1)">${counts.t1}</strong></div>
-      <div class="mini-metric"><span>预警档物料</span><strong style="color:var(--t2)">${counts.t2}</strong></div>
-      <div class="mini-metric"><span>外部上涨</span><strong>${market.available ? stats.risingCount : '—'}</strong></div>
-      <div class="mini-metric"><span>外部回落</span><strong>${market.available ? stats.fallingCount : '—'}</strong></div>
-      <div class="mini-metric"><span>外部关联物料</span><strong>${stats.matchedMaterials}</strong></div>
-      <div class="mini-metric"><span>内外高风险</span><strong>${externalUpRisk.length}</strong></div>
+    <div class="intel-decision-summary ${decisionTone}">
+      <div class="intel-decision-kicker"><span>判断结论</span><em>${market.available ? '外部参考 · 内部主导' : '仅内部数据'}</em></div>
+      <h4>${esc(decisionHeadline)}</h4>
+      <p>${esc(combinedAdvice)}</p>
     </div>
-    <p class="intel-copy"><strong>内部供应信号：</strong>${d.supply.materials.length} 项物料按覆盖天数分为 严重 ${counts.t1} / 预警 ${counts.t2} / 临期 ${counts.t3} / 正常 ${counts.t4} / 未跟踪 ${counts.t5}；${d.supply.purchase_orders.summary.overdue} 张 PO 逾期，${d.data_quality.derived.missing_mb51_receipts ?? 0} 条缺 MB51 收货记录。</p>
-    <p class="intel-copy"><strong>供应商信号：</strong>${topSupplier ? topSupplier.name + ' 当前交付健康分最低（单家指标），准时率 ' + pct(topSupplier.on_time_rate) + '，缺收货 ' + topSupplier.missing_receipts + ' 单。' : '暂无供应商数据。'}</p>
-    <p class="intel-copy"><strong>外部信号：</strong>${externalHeadline}${market.available ? `重点波动：${externalFocus}。` : ''}</p>
-    <p class="intel-copy"><strong>外部→内部匹配：</strong>已匹配 ${stats.matchedMaterials} 项内部物料、${stats.matchedGroups} 条供应相关外部行情；未匹配物料不参与外部结论。</p>
-    <div class="cross-signal-list">${crossTopHtml}</div>
-    <p class="intel-copy"><strong>建议：</strong>${combinedAdvice}</p>
-    <div class="prov-row"><b>依据</b>供应风险表 ${d.supply.materials.length} 行 + PO 台账 ${d.supply.purchase_orders.items.length} 张 + MB51 收货记录<span class="prov-sep"></span><span class="prov-tag">外部行情：${market.available ? '已接入 ' + stats.itemCount + ' 项' : '未接入'}</span><span class="prov-sep"></span><span>置信度 中 · 生成于 ${esc(d.meta.generated_at || d.meta.as_of || '')}</span></div>
-  `;
-  if (market.available && marketItems.length) {
+    <div class="intel-focus-strip">
+      <div><span>严重物料</span><strong class="risk">${counts.t1}</strong><em>优先处理</em></div>
+      <div><span>外部关联</span><strong>${stats.matchedMaterials}</strong><em>已映射物料</em></div>
+      <div><span>上行风险</span><strong class="${externalUpRisk.length ? 'risk' : 'neutral'}">${externalUpRisk.length}</strong><em>内外叠加</em></div>
+    </div>
+    <div class="intel-judgment-list">${crossTopHtml}</div>
+    <details class="intel-evidence-fold">
+      <summary><span>查看完整判断依据</span><em>内部供应 · 供应商 · 外部匹配</em></summary>
+      <div class="intel-evidence-list">
+        <div><span>内部供应</span><p>${esc(internalEvidence)}</p></div>
+        <div><span>供应商</span><p>${esc(supplierEvidence)}</p></div>
+        <div><span>外部行情</span><p>${esc(externalEvidence)}</p></div>
+        <div><span>规则匹配</span><p>${esc(matchEvidence)}</p></div>
+      </div>
+      <div class="prov-row"><b>依据</b>供应风险表 ${d.supply.materials.length} 行 + PO 台账 ${d.supply.purchase_orders.items.length} 张 + MB51 收货记录<span class="prov-sep"></span><span class="prov-tag">外部行情：${market.available ? '已接入 ' + stats.itemCount + ' 项' : '未接入'}</span><span class="prov-sep"></span><span>置信度 中 · 生成于 ${esc(d.meta.generated_at || d.meta.as_of || '')}</span></div>
+    </details>
+  `;  if (market.available && marketItems.length) {
     const newsItems = marketItems
       .filter(item => item.summary || item.source || item.url)
       .slice()

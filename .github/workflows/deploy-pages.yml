@@ -34,6 +34,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Validate WorkBuddy market contract
+        run: python scripts/validate_external_market.py --input data/external_market.json --strict-featured
+
       - name: Validate public dashboard JSON
         run: python scripts/validate_dashboard_data.py --mode competition --input data/dashboard_data.json
 

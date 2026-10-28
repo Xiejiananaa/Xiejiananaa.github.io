@@ -93,7 +93,7 @@ Get-ChildItem -LiteralPath (Join-Path $PlatformRoot "assets") -File | ForEach-Ob
 Get-ChildItem -LiteralPath (Join-Path $PlatformRoot "assets\fonts") -File | ForEach-Object {
   Copy-RequiredFile $_.FullName (Join-Path $PlatformProject "assets\fonts\$($_.Name)")
 }
-@("run_sap_pipeline.ps1","generate_data.py","validate_dashboard_data.py","build_share_html.py","build_cloudflare_site.mjs","supplier_region.py","脚本功能索引.md") | ForEach-Object {
+@("run_sap_pipeline.ps1","generate_data.py","validate_external_market.py","validate_dashboard_data.py","build_share_html.py","build_cloudflare_site.mjs","supplier_region.py","脚本功能索引.md") | ForEach-Object {
   Copy-RequiredFile (Join-Path $PlatformRoot "scripts\$_") (Join-Path $PlatformProject "scripts\$_")
 }
 Copy-RequiredFile (Join-Path $PlatformRoot "worker\index.js") (Join-Path $PlatformProject "worker\index.js")
