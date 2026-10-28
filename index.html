@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>供应雷达 · 供应链决策工作台</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="./assets/styles.css?v=20261023-v3i">
-<script src="./assets/china-map-geo.js?v=20261023-v3i" defer></script>
-<script src="./assets/supplier-map.js?v=20261023-v3i" defer></script>
-<script src="./assets/echarts.min.js?v=20261023-v3i" defer></script>
-<script src="./assets/app.js?v=20261023-v3i" defer></script>
+<link rel="stylesheet" href="./assets/styles.css?v=20261028-demandchart3">
+<script src="./assets/china-map-geo.js?v=20261028-demandchart3" defer></script>
+<script src="./assets/supplier-map.js?v=20261028-demandchart3" defer></script>
+<script src="./assets/echarts.min.js?v=20261028-demandchart3" defer></script>
+<script src="./assets/app.js?v=20261028-demandchart3" defer></script>
 </head>
 <body>
 <div class="app-shell" id="appShell">
@@ -51,7 +51,7 @@
           <button class="nav-group-toggle" aria-expanded="false">
             <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 7-7"/><path d="M14 8h6v6"/></svg></span><span class="nav-group-label">行业情报与市场洞察</span><span class="nav-count" id="navIntelCount">--</span><span class="nav-arrow"><svg viewBox="0 0 12 12" fill="none"><path d="m4 2.5 3.5 3.5L4 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </button>
-          <div class="nav-children"><button class="nav-child" data-route="intel/prices">原料行情</button><button class="nav-child" data-route="intel/industry">行业供需</button><button class="nav-child" data-route="intel/supplier-news">供应商动态</button><button class="nav-child" data-route="intel/policy">政策与供应风险</button></div>
+          <div class="nav-children"><button class="nav-child" data-route="intel/prices">原料行情</button><button class="nav-child" data-route="intel/industry">行业供需</button><button class="nav-child" data-route="intel/supplier-news">供应商动态</button></div>
         </section>
         <section class="nav-group" data-nav-group="ai">
           <button class="nav-group-toggle" aria-expanded="false">
@@ -190,7 +190,7 @@
         <section class="module-section" id="intel-prices"><div class="module-heading"><span>05.1</span><div><h3>原料行情</h3><p>价格、涨跌幅和外部价格压力。</p></div></div><div class="intel-layout"><section class="panel" id="marketPanel"></section><section class="panel" id="intelSummary"></section></div></section>
         <section class="module-section" id="intel-industry"><div class="module-heading"><span>05.2</span><div><h3>行业供需</h3><p>WorkBuddy 接入后展示行业供需与风险信号。</p></div></div><div class="panel" id="industryPanel"></div></section>
         <section class="module-section" id="intel-supplier-news"><div class="module-heading"><span>05.3</span><div><h3>供应商动态</h3><p>展示 WorkBuddy 写入的原料行情、行业资讯摘要与公开来源。</p></div></div><section class="panel news-panel" id="newsPanel"></section></section>
-        <section class="module-section" id="intel-policy"><div class="module-heading"><span>05.4</span><div><h3>政策与供应风险</h3><p>政策、合规和供应中断风险的统一观察位。</p></div></div><section class="panel" id="policyPanel"></section></section>
+
       </section>
 
       <section class="view" id="view-ai-workbuddy" data-view="ai-workbuddy" role="tabpanel">

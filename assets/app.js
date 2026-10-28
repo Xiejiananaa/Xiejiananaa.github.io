@@ -50,7 +50,6 @@ const ROUTE_CONFIG = {
   'intel/prices': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '原料行情', section: 'intel-prices' },
   'intel/industry': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '行业供需', section: 'intel-industry' },
   'intel/supplier-news': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '供应商动态', section: 'intel-supplier-news' },
-  'intel/policy': { view: 'intelligence', group: 'intel', groupLabel: '行业情报与市场洞察', label: '政策与供应风险', section: 'intel-policy' },
   'ai/workbuddy': { view: 'ai-workbuddy', group: 'ai', groupLabel: 'AI智能协同', label: 'WorkBuddy 协同' },
   'ai/chat': { view: 'ai-chat', group: 'ai', groupLabel: 'AI智能协同', label: 'AI问答' },
   'ai/tasks': { view: 'ai-tasks', group: 'ai', groupLabel: 'AI智能协同', label: '任务执行' },
@@ -860,6 +859,11 @@ function ensureChart(id, option) {
   const el = document.getElementById(id);
   if (!el || !window.echarts) return;
   let instance = state.charts[id];
+  if (instance && instance.getDom() !== el) {
+    instance.dispose();
+    instance = null;
+    delete state.charts[id];
+  }
   if (!instance) {
     instance = echarts.init(el);
     state.charts[id] = instance;
@@ -1394,7 +1398,7 @@ function renderWarehouse() {
         <div class="warehouse-kpi"><span>最老库龄</span><strong>${num(s.oldest_age_days, 0)}<small> 天</small></strong></div>
       </div>
       <div class="table-wrap" style="max-height:330px">
-        <table class="data-table" style="min-width:640px">
+        <table class="data-table warehouse-location-table">
           <thead><tr><th>库存地点</th><th>名称</th><th class="num">批次</th><th class="num">可用 kg</th><th class="num">金额</th><th class="num">最老库龄</th></tr></thead>
           <tbody>${locations.map(loc => `<tr><td class="strong">${esc(loc.location)}</td><td>${esc(loc.location_name)}</td><td class="num">${loc.batch_rows}</td><td class="num">${compact(loc.available_qty, 1)}</td><td class="num">${money(loc.inventory_amount)}</td><td class="num">${num(loc.oldest_age_days,0)}</td></tr>`).join('')}</tbody>
         </table>
@@ -1609,6 +1613,196 @@ function safeMarketUrl(value) {
   return /^https?:\/\//i.test(text) ? text : '';
 }
 
+const MARKET_LINK_RULES = [
+  { label: '丙烯酸及聚合物链', names: ['丙烯酸'], groups: ['羧酸、酐、酰卤、酯及其衍生物', '其他聚合物'], keywords: ['丙烯酸'] },
+  { label: '阴离子表活链', names: ['十二烷基苯磺酸钠'], groups: ['阴离子表面活性剂'], keywords: ['十二烷基苯磺酸钠', 'LAS'] },
+  { label: '有机硅链', names: ['二甲基环硅氧烷DMC', '二甲基硅油'], groups: ['有机硅聚合物', '硅油消泡剂'], keywords: ['有机硅', '硅油'] },
+  { label: '油脂与脂肪醇链', names: ['脂肪醇C12-14', '棕榈油', '脂肪酸', '硬脂酸', '甘油'], groups: ['改性油脂'], keywords: ['脂肪醇', '棕榈油', '脂肪酸', '硬脂酸', '甘油'] },
+  { label: 'EO/PO 醇醚链', names: ['环氧乙烷', '环氧丙烷', '乙烯', '丙烯'], groups: ['醇、醚及其衍生物', '环氧加成物', '非离子表面活性剂'], keywords: ['环氧乙烷', '环氧丙烷'] },
+  { label: '碱类原料', names: ['液碱'], groups: ['氢氧化物'], keywords: ['液碱', '氢氧化'] },
+  { label: '芳烃与基础原料', names: ['苯乙烯'], groups: ['其他芳香族'], keywords: ['苯乙烯'] },
+];
+
+function normalizeMarketChange(item) {
+  const raw = item?.change_pct;
+  if (raw === null || raw === undefined || raw === '') return null;
+  const value = Number(String(raw).replace('%', ''));
+  return Number.isFinite(value) ? value : null;
+}
+
+function marketChangeLabel(change) {
+  if (change === null) return { label: '未标注', cls: 'neutral' };
+  if (change > 0.2) return { label: '上行', cls: 'up' };
+  if (change < -0.2) return { label: '回落', cls: 'down' };
+  return { label: '暂稳', cls: 'flat' };
+}
+
+function pickMarketItemForRule(rule, items) {
+  const candidates = rule.names
+    .map(name => items.find(item => String(item.name || '').trim() === String(name).trim()))
+    .filter(Boolean);
+  return candidates.slice().sort((a, b) => Math.abs(normalizeMarketChange(b) ?? 0) - Math.abs(normalizeMarketChange(a) ?? 0))[0] || null;
+}
+
+function buildMarketCrossSignals(items) {
+  const materials = state.data.supply.materials || [];
+  const groups = new Map();
+  const matchedMaterialKeys = new Set();
+  for (const material of materials) {
+    const description = String(material.description || '');
+    const group = String(material.product_group || '');
+    const direct = items.find(item => description.includes(String(item.name || ''))) || null;
+    const rule = MARKET_LINK_RULES.find(r => r.groups.includes(group) || r.keywords.some(k => description.includes(k)));
+    const item = rule ? pickMarketItemForRule(rule, items) : direct;
+    if (!item) continue;
+    const label = rule ? rule.label : (String(item.name || '') + ' 对应物料');
+    const stateGroup = groups.get(label) || { label, item, materials: [], criticalCount: 0, priorityCount: 0, coverageMin: null };
+    stateGroup.materials.push(material);
+    const tier = tierOf(material);
+    stateGroup.criticalCount += tier === 't1' ? 1 : 0;
+    stateGroup.priorityCount += tier === 't2' || tier === 't3' ? 1 : 0;
+    const coverage = Number(material.coverage_days);
+    if (Number.isFinite(coverage)) stateGroup.coverageMin = stateGroup.coverageMin == null ? coverage : Math.min(stateGroup.coverageMin, coverage);
+    groups.set(label, stateGroup);
+    matchedMaterialKeys.add(material.key);
+  }
+  const signals = [...groups.values()].map(signal => {
+    const change = normalizeMarketChange(signal.item);
+    const direction = marketChangeLabel(change);
+    let conclusion = '外部信号暂稳，继续按内部补货节奏执行。';
+    if (signal.criticalCount > 0 && change !== null && change > 0.2) conclusion = '外部成本上行且内部存在严重缺料，建议优先锁价并确认交期。';
+    else if (signal.criticalCount > 0) conclusion = '外部价格未明显上涨，内部缺口是主矛盾，优先补货而非等待价格。';
+    else if (change !== null && change > 0.2) conclusion = '内部暂无严重缺口，但成本有上行迹象，建议控制追高并关注替代。';
+    else if (change !== null && change < -0.2) conclusion = '外部价格回落，成本压力缓和，可按计划采购并择机锁价。';
+    return { ...signal, change, direction, conclusion };
+  }).sort((a, b) => b.criticalCount - a.criticalCount || (Math.abs(b.change ?? 0) - Math.abs(a.change ?? 0)) || b.materials.length - a.materials.length);
+  const validChanges = items.map(normalizeMarketChange).filter(v => v !== null);
+  const stats = {
+    itemCount: items.length,
+    changedCount: validChanges.length,
+    risingCount: validChanges.filter(v => v > 0.2).length,
+    fallingCount: validChanges.filter(v => v < -0.2).length,
+    avgChange: validChanges.length ? validChanges.reduce((sum, v) => sum + v, 0) / validChanges.length : null,
+    matchedMaterials: matchedMaterialKeys.size,
+    matchedGroups: signals.length,
+  };
+  return { signals, stats };
+}
+const MARKET_SHOWCASE_NAMES = ['布伦特原油', '乙烯', '丙烯', '甲醇', '乙二醇', '苯乙烯', '棕榈油', '丙烯酸', '液碱', '十二烷基苯磺酸钠'];
+const MARKET_FEATURED_NAMES = ['布伦特原油', '乙烯', '丙烯', '苯乙烯'];
+const MARKET_PROJECTION_DAYS = ['今日', '+1', '+2', '+3', '+4', '+5', '+6'];
+
+function marketShowcaseItems(items, limit = 10) {
+  const byName = new Map(items.map(item => [String(item.name || ''), item]));
+  const picked = [];
+  MARKET_SHOWCASE_NAMES.forEach(name => {
+    const item = byName.get(name);
+    if (item) picked.push(item);
+  });
+  const rest = items
+    .filter(item => !picked.some(existing => existing.name === item.name))
+    .slice()
+    .sort((a, b) => Math.abs(normalizeMarketChange(b) ?? 0) - Math.abs(normalizeMarketChange(a) ?? 0));
+  return picked.concat(rest).slice(0, limit);
+}
+
+function marketFeaturedItems(items) {
+  const byName = new Map(items.map(item => [String(item.name || ''), item]));
+  const picked = MARKET_FEATURED_NAMES.map(name => byName.get(name)).filter(Boolean);
+  return (picked.length ? picked : items.slice(0, 4)).slice(0, 4);
+}
+
+function marketProjectionSeries(item) {
+  const price = Number(item?.price);
+  if (!Number.isFinite(price) || price <= 0) return [];
+  const change = normalizeMarketChange(item) ?? 0;
+  const dailyMove = Math.max(-1.2, Math.min(1.2, change * 0.35));
+  return MARKET_PROJECTION_DAYS.map((label, day) => ({
+    label,
+    value: price * Math.pow(1 + dailyMove / 100, day),
+  }));
+}
+
+function marketPriceDigits(item) {
+  const price = Number(item?.price);
+  if (!Number.isFinite(price) || Number.isInteger(price)) return 0;
+  return Math.abs(price * 100 - Math.round(price * 100)) < 0.0001 ? 2 : 1;
+}
+
+function marketProjectionColor(item) {
+  const direction = marketDirection(item?.change_pct).cls;
+  if (direction === 'up') return '#A33A2A';
+  if (direction === 'down') return '#4F7C65';
+  return '#7B8880';
+}
+
+function marketProjectionSvg(item, index) {
+  const series = marketProjectionSeries(item);
+  if (!series.length) return '<div class="market-chart-empty">暂无可绘制价格</div>';
+  const base = Number(item.price);
+  const digits = marketPriceDigits(item);
+  const width = 320;
+  const height = 104;
+  const paddingX = 10;
+  const paddingTop = 11;
+  const paddingBottom = 15;
+  const values = series.map(point => point.value);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const spread = Math.max(rawMax - rawMin, Math.abs(base) * 0.001, 0.01);
+  const min = rawMin - spread * 0.18;
+  const max = rawMax + spread * 0.18;
+  const plotWidth = width - paddingX * 2;
+  const plotHeight = height - paddingTop - paddingBottom;
+  const points = series.map((point, pointIndex) => ({
+    ...point,
+    x: paddingX + (plotWidth * pointIndex) / (series.length - 1),
+    y: paddingTop + ((max - point.value) / (max - min)) * plotHeight,
+  }));
+  const path = points.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+  const area = `${path} L ${points[points.length - 1].x.toFixed(1)},${(height - paddingBottom).toFixed(1)} L ${points[0].x.toFixed(1)},${(height - paddingBottom).toFixed(1)} Z`;
+  const color = marketProjectionColor(item);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const gradientId = `marketArea${index}`;
+  return `<svg class="market-mini-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(item.name)} 未来 7 天规则外推走势">
+    <defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity=".16"/><stop offset="100%" stop-color="${color}" stop-opacity=".01"/></linearGradient></defs>
+    <line x1="${paddingX}" y1="${first.y.toFixed(1)}" x2="${width - paddingX}" y2="${first.y.toFixed(1)}" stroke="#D8D4CC" stroke-width="1" stroke-dasharray="3 4" opacity=".72"/>
+    <path d="${area}" fill="url(#${gradientId})" stroke="none"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/>
+    <circle cx="${first.x.toFixed(1)}" cy="${first.y.toFixed(1)}" r="3.2" fill="${color}"/>
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="2.7" fill="#FFFFFF" stroke="${color}" stroke-width="1.8"/>
+    <text x="${paddingX}" y="${Math.max(10, first.y - 7).toFixed(1)}" font-size="9" fill="${color}" font-weight="600">${num(first.value, digits)}</text>
+    <text x="${width - paddingX}" y="${Math.max(10, last.y - 7).toFixed(1)}" text-anchor="end" font-size="9" fill="${color}" font-weight="600">${num(last.value, digits)}</text>
+    <text x="${paddingX}" y="${height - 2}" font-size="8.5" fill="#8B8580">今日</text>
+    <text x="${width - paddingX}" y="${height - 2}" text-anchor="end" font-size="8.5" fill="#8B8580">+6天</text>
+  </svg>`;
+}
+
+function marketProjectionCardHtml(item, index) {
+  const series = marketProjectionSeries(item);
+  const direction = marketDirection(item.change_pct);
+  const digits = marketPriceDigits(item);
+  const values = series.map(point => point.value);
+  const min = values.length ? Math.min(...values) : Number(item.price);
+  const max = values.length ? Math.max(...values) : Number(item.price);
+  const change = normalizeMarketChange(item);
+  const trendLabel = change == null ? '方向待补' : change > 0.2 ? '偏强' : change < -0.2 ? '偏弱' : '横盘';
+  const unit = item.unit || '';
+  return `<article class="market-mini-card ${direction.cls}">
+    <div class="market-mini-head"><strong>${esc(item.name)}</strong><span class="market-change-pill ${direction.cls}">${marketChangeText(item.change_pct)}</span></div>
+    <div class="market-mini-price"><strong>${num(item.price, digits)}</strong><span>${esc(unit)}</span></div>
+    <div class="market-mini-chart">${marketProjectionSvg(item, index)}</div>
+    <div class="market-mini-days">${series.map((point, pointIndex) => `<div><span>${pointIndex === 0 ? '今日' : `+${pointIndex}天`}</span><b>${num(point.value, digits)}</b></div>`).join('')}</div>
+    <div class="market-mini-foot"><span>规则外推区间 <b>${num(min, digits)}–${num(max, digits)} ${esc(unit)}</b></span><em class="${direction.cls}">${trendLabel}</em></div>
+  </article>`;
+}
+
+function marketWatchItemHtml(item) {
+  const direction = marketDirection(item.change_pct);
+  const digits = marketPriceDigits(item);
+  return `<div class="market-watch-item"><div><strong>${esc(item.name)}</strong><span>${esc(item.category || '未分类')}</span></div><div><b>${num(item.price, digits)}</b><em class="${direction.cls}">${marketChangeText(item.change_pct)}</em></div></div>`;
+}
 function renderIntelligence() {
   const d = state.data;
   const market = d.supply.external_market;
@@ -1617,13 +1811,15 @@ function renderIntelligence() {
   $('#marketStatus').className = 'status-pill ' + (market.available ? 'live' : 'subtle');
 
   if (market.available && marketItems.length) {
-    const items = (market.summary?.top_movers?.length ? market.summary.top_movers : marketItems).slice(0, 6);
+    const items = marketShowcaseItems(marketItems, 10);
+    const featured = marketFeaturedItems(marketItems);
+    const featuredNames = new Set(featured.map(item => item.name));
+    const watchItems = items.filter(item => !featuredNames.has(item.name));
     $('#marketPanel').innerHTML = `
-      <div class="panel-head"><div><span class="eyebrow">External market</span><h3>行情快照</h3></div><span class="panel-note">${esc(market.updated_at || '日期待同步')}</span></div>
-      <div class="market-grid">${items.map(item => {
-        const direction = marketDirection(item.change_pct);
-        return `<div class="market-card"><span>${esc(item.name)} · ${esc(item.category || '未分类')}</span><strong>${marketPriceText(item)}</strong><em class="${direction.cls}">${direction.label} ${marketChangeText(item.change_pct)}</em></div>`;
-      }).join('')}</div>
+      <div class="panel-head"><div><span class="eyebrow">External market</span><h3>核心原料未来 7 天</h3></div><div class="market-panel-meta"><span class="market-panel-tag">参考信息</span><span class="panel-note">${items.length} 个品种 · ${esc(market.updated_at || '日期待同步')}</span></div></div>
+      <div class="market-feature-grid">${featured.map((item, index) => marketProjectionCardHtml(item, index)).join('')}</div>
+      ${watchItems.length ? `<div class="market-watchlist"><div class="market-watch-head"><span>其他核心原料</span><span>当前价 · 涨跌</span></div><div class="market-watch-grid">${watchItems.map(marketWatchItemHtml).join('')}</div></div>` : ''}
+      <p class="side-note market-method-note"><strong>读法：</strong>圆点为今日价格，虚线及阴影为按当前涨跌幅平滑外推的未来 7 天路径；仅用于观察方向，不是真实预测、报价或采购承诺。内部库存仍主导决策。</p>
       <p class="side-note">数据来源：WorkBuddy 写入的 external_market.json。页面只展示，不在此处改写行情。</p>
     `;
   } else {
@@ -1639,21 +1835,58 @@ function renderIntelligence() {
 
   const counts = tierCounts(d.supply.materials);
   const topSupplier = [...d.supply.suppliers.items].sort((a, b) => (a.delivery_health_score ?? 0) - (b.delivery_health_score ?? 0))[0];
+  const cross = buildMarketCrossSignals(marketItems);
+  const stats = cross.stats;
+  const crossTop = cross.signals.slice(0, 3);
+  const externalUpRisk = cross.signals.filter(signal => signal.criticalCount > 0 && signal.change !== null && signal.change > 0.2);
+  const externalDownGroups = cross.signals.filter(signal => signal.change !== null && signal.change < -0.2);
+  const topExternal = marketItems
+    .filter(item => normalizeMarketChange(item) !== null)
+    .slice()
+    .sort((a, b) => Math.abs(normalizeMarketChange(b)) - Math.abs(normalizeMarketChange(a)))
+    .slice(0, 3);
+  const externalHeadline = market.available
+    ? `WorkBuddy 已接入 ${stats.itemCount} 项行情，其中 ${stats.changedCount} 项有有效涨跌：上涨 ${stats.risingCount}、回落 ${stats.fallingCount}，平均 ${stats.avgChange == null ? '—' : stats.avgChange.toFixed(2) + '%'}。`
+    : '外部行情尚未接入，当前只使用内部供应、PO 和 MB51 信号，不对价格作结论。';
+  const externalFocus = topExternal.length
+    ? topExternal.map(item => `${item.name} ${marketChangeText(item.change_pct)}`).join('；')
+    : '暂无可比较的外部行情';
+  const crossTopHtml = crossTop.length ? crossTop.map(signal => {
+    const names = signal.materials.slice(0, 3).map(item => item.description || item.material).join(' / ');
+    return `<div class="cross-signal-item">
+      <div class="cross-signal-head"><strong>${esc(signal.label)}</strong><span class="market-direction ${signal.direction.cls}">${signal.direction.label} ${marketChangeText(signal.item.change_pct)}</span></div>
+      <p>${esc(signal.conclusion)}</p>
+      <div class="cross-signal-meta"><span>外部：${esc(signal.item.name)} ${marketPriceText(signal.item)}</span><span>关联 ${signal.materials.length} 项物料</span><span>严重 ${signal.criticalCount}</span><span>样例：${esc(names)}</span></div>
+    </div>`;
+  }).join('') : '<div class="cross-empty">当前行情未能匹配到内部产品组，暂不生成外部结论。</div>';
+  let combinedAdvice = '优先处理内部严重档和优先档，再按补货建议执行。';
+  if (!market.available) {
+    combinedAdvice = `当前外部行情未接入，先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项，不能据此判断提前锁价。`;
+  } else if (externalUpRisk.length) {
+    combinedAdvice = `外部上行与内部高风险同时出现：${externalUpRisk.map(signal => signal.label).join('、')}，建议先锁定关键物料价格和交期，再处理其余补货。`;
+  } else if (externalDownGroups.length) {
+    combinedAdvice = `外部价格回落的链条包括 ${externalDownGroups.map(signal => signal.label).join('、')}；可对相关物料按计划采购、择机锁价，但严重档仍应先保供。`;
+  } else if (stats.matchedMaterials) {
+    combinedAdvice = `外部涨跌暂未形成明显成本压力，内部缺口仍是主矛盾；优先处理严重档 ${counts.t1} 项和优先档 ${counts.t2 + counts.t3} 项。`;
+  }
   $('#intelSummary').innerHTML = `
-    <div class="panel-head"><div><span class="eyebrow">Internal signals</span><h3>内外结合判断</h3></div><span class="badge blue">本地推演</span></div>
+    <div class="panel-head"><div><span class="eyebrow">Internal + market signals</span><h3>内外结合判断</h3></div><span class="badge blue">规则交叉</span></div>
     <div class="mini-metric-grid" style="margin-bottom:12px">
       <div class="mini-metric"><span>严重档物料</span><strong style="color:var(--t1)">${counts.t1}</strong></div>
       <div class="mini-metric"><span>预警档物料</span><strong style="color:var(--t2)">${counts.t2}</strong></div>
-      <div class="mini-metric"><span>逾期 PO</span><strong>${d.supply.purchase_orders.summary.overdue}</strong></div>
-      <div class="mini-metric"><span>缺 MB51 收货</span><strong>${d.data_quality.derived.missing_mb51_receipts ?? 0}</strong></div>
+      <div class="mini-metric"><span>外部上涨</span><strong>${market.available ? stats.risingCount : '—'}</strong></div>
+      <div class="mini-metric"><span>外部回落</span><strong>${market.available ? stats.fallingCount : '—'}</strong></div>
+      <div class="mini-metric"><span>外部关联物料</span><strong>${stats.matchedMaterials}</strong></div>
+      <div class="mini-metric"><span>内外高风险</span><strong>${externalUpRisk.length}</strong></div>
     </div>
     <p class="intel-copy"><strong>内部供应信号：</strong>${d.supply.materials.length} 项物料按覆盖天数分为 严重 ${counts.t1} / 预警 ${counts.t2} / 临期 ${counts.t3} / 正常 ${counts.t4} / 未跟踪 ${counts.t5}；${d.supply.purchase_orders.summary.overdue} 张 PO 逾期，${d.data_quality.derived.missing_mb51_receipts ?? 0} 条缺 MB51 收货记录。</p>
     <p class="intel-copy"><strong>供应商信号：</strong>${topSupplier ? topSupplier.name + ' 当前交付健康分最低（单家指标），准时率 ' + pct(topSupplier.on_time_rate) + '，缺收货 ' + topSupplier.missing_receipts + ' 单。' : '暂无供应商数据。'}</p>
-    <p class="intel-copy"><strong>外部信号：</strong>${market.available ? 'WorkBuddy 已写入行情，请结合涨幅和采购周期判断是否需要提前锁价。' : '尚未接入行情，当前建议优先使用内部供应信号，不对外部价格作结论。'}</p>
-    <p class="intel-copy"><strong>建议：</strong>先处理严重档 ${counts.t1} 项与未跟踪档 ${counts.t5} 项（后者多为台账未清账，需先核对），再结合供应商缺收货和外部行情判断是否提前下单。</p>
-    <div class="prov-row"><b>依据</b>供应风险表 ${d.supply.materials.length} 行 + PO 台账 ${d.supply.purchase_orders.items.length} 张 + MB51 收货记录<span class="prov-sep"></span><span class="prov-tag">外部行情：${market.available ? '已接入' : '未接入'}</span><span class="prov-sep"></span><span>置信度 中 · 生成于 ${esc(d.meta.generated_at || d.meta.as_of || '')}</span></div>
+    <p class="intel-copy"><strong>外部信号：</strong>${externalHeadline}${market.available ? `重点波动：${externalFocus}。` : ''}</p>
+    <p class="intel-copy"><strong>外部→内部匹配：</strong>已匹配 ${stats.matchedMaterials} 项内部物料、${stats.matchedGroups} 条供应相关外部行情；未匹配物料不参与外部结论。</p>
+    <div class="cross-signal-list">${crossTopHtml}</div>
+    <p class="intel-copy"><strong>建议：</strong>${combinedAdvice}</p>
+    <div class="prov-row"><b>依据</b>供应风险表 ${d.supply.materials.length} 行 + PO 台账 ${d.supply.purchase_orders.items.length} 张 + MB51 收货记录<span class="prov-sep"></span><span class="prov-tag">外部行情：${market.available ? '已接入 ' + stats.itemCount + ' 项' : '未接入'}</span><span class="prov-sep"></span><span>置信度 中 · 生成于 ${esc(d.meta.generated_at || d.meta.as_of || '')}</span></div>
   `;
-
   if (market.available && marketItems.length) {
     const newsItems = marketItems
       .filter(item => item.summary || item.source || item.url)
@@ -2243,6 +2476,20 @@ function simulateSupply(params) {
   };
 }
 
+function simulationChangedFields(params) {
+  const fields = [];
+  if (Number(params.horizon) !== 14) fields.push(`周期 ${params.horizon} 天`);
+  if (Number(params.demand) !== 1) fields.push(`需求 ${params.demand}×`);
+  if (Number(params.delay) !== 0) fields.push(`延迟 +${params.delay} 天`);
+  if (Number(params.safety) !== 1) fields.push(`安全库存 +${Math.round((params.safety - 1) * 100)}%`);
+  return fields;
+}
+
+function simulationRiskDelta(current, baseline, formatter = value => compact(value, 1)) {
+  const delta = Number(current || 0) - Number(baseline || 0);
+  if (Math.abs(delta) < 0.05) return '<span class="sim-delta flat">持平</span>';
+  return `<span class="sim-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${formatter(delta)}</span>`;
+}
 function simulationWindow(days = 10) {
   const start = new Date(String(state.data.meta.as_of || state.data.meta.generated_at || '').slice(0, 10) + 'T00:00:00');
   const validStart = Number.isNaN(start.getTime()) ? new Date() : start;
@@ -2277,24 +2524,31 @@ function simulationGanttHtml(current, base) {
   if (!tasks.length) return '<div class="empty-state">当前情景没有可展示的模拟任务。</div>';
   const rows = tasks.map((row, index) => {
     const baseRow = baseMap.get(row.key) || row;
-    const startOffset = Math.max(0, Math.min(days.length - 1, simulationDayOffset(row.must_order_by, index % 4)));
+    const rawStart = Math.max(0, Math.min(days.length - 1, simulationDayOffset(row.must_order_by, index % 4)));
     const simulatedLead = Math.max(1, Math.ceil(Number(row.sim_lead || row.avg_lead_days || 1)));
     const baseLead = Math.max(1, Math.ceil(Number(baseRow.sim_lead || baseRow.avg_lead_days || 1)));
-    const simulatedLength = Math.max(1, Math.min(days.length - startOffset, simulatedLead));
-    const baselineLength = Math.max(1, Math.min(days.length - startOffset, baseLead));
+    const baseGap = Number(baseRow.sim_gap || 0);
+    const currentGap = Number(row.sim_gap || 0);
+    const gapGrowth = baseGap > 0 ? currentGap / baseGap : currentGap > 0 ? 1.2 : 1;
+    const gapPressureDays = Math.max(0, Math.min(3, Math.round((gapGrowth - 1) * 5)));
+    const gapPressurePct = Math.round((gapGrowth - 1) * 100);
+    const startOffset = Math.max(0, rawStart - gapPressureDays);
+    const baselineStartOffset = rawStart;
+    const simulatedLength = Math.max(1, Math.min(days.length - startOffset, simulatedLead + gapPressureDays));
+    const baselineLength = Math.max(1, Math.min(days.length - baselineStartOffset, baseLead));
     const tier = row.sim_tier || simTier(row.projected_days);
     const barClass = tier === 't1' ? 'risk' : tier === 't2' || tier === 't3' ? 'warn' : 'ok';
+    const pressureClass = gapPressurePct > 5 ? ' pressure-up' : '';
     const showBaseline = state.simulation.demand !== 1 || state.simulation.delay !== 0 || state.simulation.safety !== 1;
     return `<div class="sim-gantt-row">
-      <div class="sim-gantt-name"><strong>${esc(row.material)}</strong><span>${esc(row.plant)} · ${esc(row.supplier)}</span></div>
+      <div class="sim-gantt-name"><strong>${esc(row.material)}</strong><span>${gapPressurePct > 5 ? `缺口↑${gapPressurePct}% · ` : ''}${esc(row.plant)} · ${esc(row.supplier)}</span></div>
       <div class="sim-gantt-lane">
         <div class="sim-gantt-grid">${days.map(day => `<i class="${day.weekend ? 'weekend' : ''}"></i>`).join('')}</div>
-        ${showBaseline ? `<div class="sim-gantt-bar baseline" style="left:${(startOffset / days.length * 100).toFixed(2)}%;width:${(baselineLength / days.length * 100).toFixed(2)}%" title="基准计划：${esc(row.material)} · ${baseLead} 天"></div>` : ''}
-        <button type="button" class="sim-gantt-bar ${barClass}" data-sim-task="${esc(row.key)}" style="left:${(startOffset / days.length * 100).toFixed(2)}%;width:${(simulatedLength / days.length * 100).toFixed(2)}%" title="${esc(row.material)} · ${esc(row.description || '')} · 模拟 ${simulatedLead} 天 · 缺口 ${compact(row.sim_gap, 0)} kg"><span>${esc(row.material)}</span><em>${simulatedLead}天</em></button>
+        ${showBaseline ? `<div class="sim-gantt-bar baseline" style="left:${(baselineStartOffset / days.length * 100).toFixed(2)}%;width:${(baselineLength / days.length * 100).toFixed(2)}%" title="基准计划：${esc(row.material)} · ${baseLead} 天"></div>` : ''}
+        <button type="button" class="sim-gantt-bar ${barClass}${pressureClass}" data-sim-task="${esc(row.key)}" style="left:${(startOffset / days.length * 100).toFixed(2)}%;width:${(simulatedLength / days.length * 100).toFixed(2)}%" title="${esc(row.material)} · 需求 ${state.simulation.demand}× · 延迟 +${state.simulation.delay} 天 · 缺口相对基准 ${gapPressurePct > 0 ? '+' : ''}${gapPressurePct}% · 计划窗口 ${simulatedLength} 天"><span>${esc(row.material)}</span><em>${simulatedLength}天</em></button>
       </div>
     </div>`;
-  }).join('');
-  return `<div class="sim-gantt-scroll"><div class="sim-gantt-inner">
+  }).join('');return `<div class="sim-gantt-scroll"><div class="sim-gantt-inner">
     <div class="sim-gantt-axis"><div class="sim-gantt-axis-name">物料 / 工厂</div><div class="sim-gantt-axis-days">${days.map(day => `<div class="${day.weekend ? 'weekend' : ''} ${day.index === 0 ? 'today' : ''}"><span>周${day.weekday}</span><b>${day.label}</b></div>`).join('')}</div></div>
     ${rows}
     <div class="sim-gantt-today" style="left:calc(150px + (100% - 150px) * ${(0.5 / days.length).toFixed(4)})"></div>
@@ -2308,6 +2562,15 @@ function renderProduction() {
   const current = simulateSupply(state.simulation);
   const demandUp = simulateSupply({ demand: 1.2, delay: state.simulation.delay, safety: state.simulation.safety });
   const delayUp = simulateSupply({ demand: state.simulation.demand, delay: state.simulation.delay + 7, safety: state.simulation.safety });
+  const changedFields = simulationChangedFields(state.simulation);
+  const scenarioChanged = changedFields.length > 0;
+  const safetyLabel = state.simulation.safety === 1 ? '当前' : `+${Math.round((state.simulation.safety - 1) * 100)}%`;
+  const parameterPills = [
+    `周期 <b>${state.simulation.horizon} 天</b>`,
+    `需求 <b>${state.simulation.demand}×</b>`,
+    `延迟 <b>+${state.simulation.delay} 天</b>`,
+    `安全库存 <b>${safetyLabel}</b>`,
+  ].map(text => `<span class="sim-feedback-pill">${text}</span>`).join('');
   $('#productionPlan').innerHTML = `
     <div class="panel-head"><div><span class="eyebrow">Scenario inputs</span><h3>推演参数</h3></div><span class="badge amber">不写入正式数据</span></div>
     <div class="sim-controls">
@@ -2316,14 +2579,24 @@ function renderProduction() {
       <div class="sim-field"><label>供应商延迟</label><select id="simDelay"><option value="0" ${state.simulation.delay === 0 ? 'selected' : ''}>不延迟</option><option value="3" ${state.simulation.delay === 3 ? 'selected' : ''}>+3 天</option><option value="7" ${state.simulation.delay === 7 ? 'selected' : ''}>+7 天</option><option value="14" ${state.simulation.delay === 14 ? 'selected' : ''}>+14 天</option></select></div>
       <div class="sim-field"><label>安全库存策略</label><select id="simSafety"><option value="1" ${state.simulation.safety === 1 ? 'selected' : ''}>当前</option><option value="1.25" ${state.simulation.safety === 1.25 ? 'selected' : ''}>提高 25%</option><option value="1.5" ${state.simulation.safety === 1.5 ? 'selected' : ''}>提高 50%</option></select></div>
     </div>
-    <p class="side-note">推演用当前平均日销量、到货天数和安全库存重算情景缺口；以下时间轴为供应侧模拟排程，不写入正式工单。</p>
-    <section class="sim-progress-card" id="simulationProgress">
+    <div class="sim-param-feedback" id="simParamFeedback" aria-live="polite">
+      <div class="sim-feedback-lead"><span class="sim-feedback-state ${scenarioChanged ? 'changed' : ''}">${scenarioChanged ? '已重算' : '基准情景'}</span><strong>${scenarioChanged ? changedFields.join(' · ') : '全部使用当前基准参数'}</strong><span>参数已带入下方缺口、供应商影响与时间轴</span></div>
+      <div class="sim-feedback-pills">${parameterPills}</div>
+    </div>
+    <p class="side-note">推演用当前平均日销量、到货天数和安全库存重算情景缺口；下方模拟进度会随参数同步更新，但不写入正式工单。</p>
+    <section class="sim-progress-card${scenarioChanged ? ' is-linked' : ''}" id="simulationProgress" aria-live="polite">
       <div class="sim-progress-head">
-        <div><span class="eyebrow">Simulation progress</span><h3>模拟计划进度</h3><p>需求倍数 ${state.simulation.demand}× · 供应商延迟 +${state.simulation.delay} 天 · 当前缺口 ${current.gapCount} 项</p></div>
+        <div><span class="eyebrow">Simulation progress</span><h3>模拟计划进度</h3><p>当前情景缺口 ${current.gapCount} 项 ${simulationRiskDelta(current.gapCount, base.gapCount, value => `${Math.abs(value)} 项`)}，与上方参数同步。</p><div class="sim-progress-context"><span>需求 ${state.simulation.demand}×</span><span>延迟 +${state.simulation.delay} 天</span><span>安全库存 ${safetyLabel}</span></div></div>
         <button class="text-btn" type="button" id="simGanttRunBtn">重新计算</button>
       </div>
+      <div class="sim-progress-summary">
+        <div class="sim-link-metric"><span>缺口物料</span><strong>${current.gapCount}${simulationRiskDelta(current.gapCount, base.gapCount, value => `${Math.abs(value)} 项`)}</strong></div>
+        <div class="sim-link-metric"><span>推演补货量 (kg)</span><strong>${compact(current.totalGap, 1)}${simulationRiskDelta(current.totalGap, base.totalGap)}</strong></div>
+        <div class="sim-link-metric"><span>严重档</span><strong>${current.counts.t1}${simulationRiskDelta(current.counts.t1, base.counts.t1, value => `${Math.abs(value)} 项`)}</strong></div>
+        <div class="sim-link-metric"><span>受影响供应商</span><strong>${current.affectedSuppliers}${simulationRiskDelta(current.affectedSuppliers, base.affectedSuppliers, value => `${Math.abs(value)} 家`)}</strong></div>
+      </div>
       <div class="sim-gantt">${simulationGanttHtml(current, base)}</div>
-      <div class="sim-progress-legend"><span><i class="ok"></i>模拟计划</span><span><i class="warn"></i>需关注</span><span><i class="risk"></i>缺料风险</span><span><i class="baseline"></i>基准计划</span><span class="sim-progress-note">按物料缺口与预计采购提前期生成</span></div>
+      <div class="sim-progress-legend"><span><i class="ok"></i>模拟计划</span><span><i class="warn"></i>需关注</span><span><i class="risk"></i>缺料风险</span><span><i class="baseline"></i>基准计划</span><span class="sim-progress-note">缺口压力越大，计划窗口越早启动并延长</span></div>
     </section>
   `;
   ['simHorizon','simDemand','simDelay','simSafety'].forEach(id => {
@@ -2334,7 +2607,9 @@ function renderProduction() {
         delay: Number($('#simDelay').value),
         safety: Number($('#simSafety').value),
       };
+      const controlId = id;
       renderProduction();
+      document.getElementById(controlId)?.focus();
     });
   });
   $$('#simulationProgress [data-sim-task]').forEach(button => button.addEventListener('click', () => {
@@ -2412,12 +2687,7 @@ function renderIntelExtras() {
   } else {
     $('#industryPanel').innerHTML = '<div class="empty-state">WorkBuddy 尚未写入行业供需数据。接入后将在这里展示行业景气、供需缺口和价格压力。</div>';
   }
-  const risk = state.data.supply.materials.filter(m => tierOf(m) === 't1' || tierOf(m) === 't2').slice(0, 6);
-  $('#policyPanel').innerHTML = `
-    <div class="panel-head"><div><span class="eyebrow">Policy & supply risk</span><h3>供应风险提示</h3></div><span class="panel-note">内部信号</span></div>
-    <div class="policy-grid">${risk.map(m => `<div class="policy-card"><strong>${esc(m.material)} · ${esc(m.plant)}</strong><span>${esc(m.risk_reason || '供应覆盖偏紧')}</span></div>`).join('') || '<div class="empty-state">暂无严重或预警供应风险</div>'}</div>
-    <p class="side-note">政策与监管情报将在 WorkBuddy 接入后补充，当前不使用模拟政策数据。</p>
-  `;
+
 }
 
 function renderAICenter() {
