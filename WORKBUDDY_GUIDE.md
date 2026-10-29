@@ -194,7 +194,54 @@ if ($LASTEXITCODE -ne 0) { throw "dashboard_data.json 安全校验失败，停�
 & $PY scripts\validate_dashboard_data.py --mode competition --baseline data\previous_dashboard_data.json
 ```
 
-## 6. 动作三：提交和推送
+## 6. 动作三：一键生成、校验、提交和推送
+
+> 可直接交给 WorkBuddy 的完整提示词：`delivery_templates\WorkBuddy第一阶段一键提示词.md`
+
+第一阶段自动化只需要 WorkBuddy 完成外部行情 JSON，然后执行一个总控脚本。
+
+先同步远端：
+
+```powershell
+Set-Location "D:\Users\22614\Documents\供应链平台"
+git pull --rebase origin main
+if ($LASTEXITCODE -ne 0) { throw "git pull --rebase 失败，停止本次任务" }
+```
+
+WorkBuddy 写入并保存 `data\external_market.json` 后执行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_daily_automation.ps1"
+if ($LASTEXITCODE -ne 0) { throw "每日自动化失败，停止发布并发送告警" }
+```
+
+总控脚本会自动完成：
+
+```text
+外部行情时效与字段校验
+→ SAP ZWM002 / ME2L / MB51 抓取
+→ 三路抓取状态门禁
+→ 翻译与部分脱敏
+→ dashboard_data.json / dashboard_data.js 生成
+→ 看板安全校验与基线校验
+→ 构建分享版
+→ 只暂存公开数据文件
+→ git commit
+→ git push origin main
+→ 写入运行报告
+```
+
+运行报告位置：
+
+```text
+%TEMP%\SAPRadar_outputs\daily_run_latest.json
+```
+
+WorkBuddy 只在脚本退出码为 `0` 且运行报告 `status=ok` 时报告成功。
+
+### 手工排查模式
+
+以下命令只在总控脚本失败、需要定位问题时使用。
 
 > 当前目录已初始化 Git，并绑定远程仓库：
 >
@@ -206,10 +253,7 @@ if ($LASTEXITCODE -ne 0) { throw "dashboard_data.json 安全校验失败，停�
 > 日常自动任务只能提交数据白名单，禁止执行 `git add .` 或 `git add data/`。
 
 ```powershell
-git pull --rebase
-if ($LASTEXITCODE -ne 0) { throw "git pull --rebase 失败" }
-
-git add -- data\external_market.json data\dashboard_data.json
+git add -- data\external_market.json data\dashboard_data.json data\dashboard_data.js
 if ($LASTEXITCODE -ne 0) { throw "git add 失败" }
 
 git diff --cached --quiet
@@ -225,15 +269,9 @@ if ($LASTEXITCODE -eq 1) {
 }
 ```
 
-推送失败时最多重试 3 次：
+推送失败时最多重试 3 次，不允许强制推送，不覆盖远端提交。
 
-```text
-git pull --rebase
-git push origin main
-```
-
-连续 3 次失败后停止，不强制推送，不覆盖远端提交。
-
+第一阶段正式入口固定为 `scripts\run_daily_automation.ps1`；WorkBuddy 不再自行拼接 SAP、校验、提交和推送步骤。
 ## 7. 比赛演示入口
 
 不需要在评委面前打开 PowerShell。直接打开：
@@ -331,16 +369,19 @@ dist\供应雷达-分享讨论版.html
 
 停止时保留上一版可用 JSON，发送失败通知，不执行强制推送。
 
-## 12. 无提交演练
+## 12. 无推送演练
 
 首次启用前执行：
 
 ```powershell
-& $PY scripts\validate_external_market.py --input data\external_market.json --strict-featured
-& $PY scripts\generate_data.py --mode competition
-& $PY scripts\validate_dashboard_data.py --mode competition
-& $PY scripts\build_share_html.py
-git diff -- data\dashboard_data.json data\external_market.json
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\run_daily_automation.ps1" -CheckOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\run_daily_automation.ps1" -SkipPush
 ```
 
-确认无误后再启用定时任务。
+第一条只检查路径、行情契约和运行环境；第二条执行完整生成、校验和本地提交，但不推送远端。
+
+演练后检查：
+
+```text
+%TEMP%\SAPRadar_outputs\daily_run_latest.json
+```

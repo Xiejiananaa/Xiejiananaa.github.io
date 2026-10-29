@@ -241,27 +241,42 @@ data\external_market.json
 - `change_pct` 使用百分数数值；7 天走势由前端动态计算，不写伪造 forecast。
 - 写入后执行 `scripts\validate_external_market.py --strict-featured`。
 
-### 动作二：执行计算与校验
+### 动作二：一键执行后续全链路
+
+WorkBuddy 更新 `external_market.json` 后执行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_sap_pipeline.ps1" -MaskMode 部分
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_daily_automation.ps1"
 ```
 
-或分步：
+总控脚本自动完成：
 
-```powershell
-& $PY scripts\validate_external_market.py --input data\external_market.json --strict-featured
-& $PY scripts\generate_data.py --mode competition
-& $PY scripts\validate_dashboard_data.py --mode competition
+- 外部行情字段与 48 小时时效校验
+- ZWM002 / ME2L / MB51 抓取
+- 三路抓取 `status=ok` 门禁
+- 翻译与部分脱敏
+- JSON / JS 生成
+- 看板安全校验与基线校验
+- 分享版构建
+- 白名单数据提交
+- `git push origin main`
+
+运行报告：
+
+```text
+%TEMP%\SAPRadar_outputs\daily_run_latest.json
 ```
 
-### 动作三：推送公开数据
+只有退出码为 0 且报告 `status=ok` 才视为成功。
 
-日常自动任务只能提交数据白名单：
+### 动作三：发布白名单
+
+日常自动任务只允许提交：
 
 ```text
 data\external_market.json
 data\dashboard_data.json
+data\dashboard_data.js
 ```
 
 禁止：
@@ -269,10 +284,8 @@ data\dashboard_data.json
 ```text
 git add .
 git add data/
+git push --force
 ```
-
-提交前必须校验通过。推送失败最多重试 3 次，不允许强制推送。
-
 ## 7. 脚本命名和中文索引
 
 为保证自动任务稳定，Python/PowerShell 原始文件名继续使用英文。

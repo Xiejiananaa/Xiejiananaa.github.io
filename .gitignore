@@ -22,3 +22,4 @@ index_original.html
 _site/
 .wrangler/
 .taste-skill/
+data/external_market.json.bak.*

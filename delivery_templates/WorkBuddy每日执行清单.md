@@ -1,22 +1,37 @@
 # WorkBuddy 每日执行清单
 
+> 配套一键提示词：`WorkBuddy第一阶段一键提示词.md`
+
 ## 每天按顺序执行
 
-1. `git pull --rebase`
+1. 同步 GitHub：
+   `git pull --rebase origin main`
 2. 抓取外部行情，写入 `02_供应链可视化平台\data\external_market.json`
-3. 在 `02_供应链可视化平台` 目录校验行情页面契约：
+3. 确保已填写 `updated_at`、`price`、`unit`、`change_pct`、`date`、`source`
+4. 执行第一阶段一键总控：
 
 ```powershell
-python scripts\validate_external_market.py --input data\external_market.json --strict-featured
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "02_供应链可视化平台\scripts\run_daily_automation.ps1"
 ```
 
-4. 执行 `00_一键入口\02_抓取SAP并更新页面.bat`
-5. 确认 `dashboard_data.json` 校验通过
-6. 只提交公开数据白名单：
-   - `data\external_market.json`
-   - `data\dashboard_data.json`
-7. 推送 GitHub `main`
-8. GitHub Actions 成功后停止
+5. 检查脚本退出码必须为 `0`
+6. 检查运行报告：
+   `%TEMP%\SAPRadar_outputs\daily_run_latest.json`
+7. 报告 `status=ok` 后任务结束
+8. GitHub Actions 自动部署页面
+
+## 一键总控自动完成
+
+- 外部行情契约与时效校验
+- ZWM002 / ME2L / MB51 抓取
+- 三路抓取状态门禁
+- 翻译与部分脱敏
+- JSON / JS 数据生成
+- 看板安全校验与基线校验
+- 分享版构建
+- 数据白名单提交
+- GitHub 推送
+- 运行报告写入
 
 ## 比赛精简版重点品种
 
@@ -39,4 +54,4 @@ python scripts\validate_external_market.py --input data\external_market.json --s
 - 不执行 `git add .`
 - 不执行 `git add data/`
 - 不强制推送
-- 抓取失败不使用旧数据冒充当天数据
+- 每日任务失败时不要手工跳过校验继续发布

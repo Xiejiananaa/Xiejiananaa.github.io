@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,21 @@ def parse_number(value: Any) -> float | None:
     except ValueError:
         return None
     return number if number == number and abs(number) != float("inf") else None
+
+
+def parse_timestamp(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def validate_market(payload: Any, strict_featured: bool) -> tuple[list[str], list[str], dict[str, int]]:
@@ -103,6 +119,12 @@ def main() -> int:
         action="store_true",
         help="要求布伦特原油、乙烯、苯乙烯三个比赛重点品种存在且价格有效",
     )
+    parser.add_argument(
+        "--max-age-hours",
+        type=float,
+        default=0,
+        help="updated_at 允许的最大时效小时数；0 表示不检查",
+    )
     args = parser.parse_args()
 
     path = Path(args.input)
@@ -116,6 +138,20 @@ def main() -> int:
         return 1
 
     errors, warnings, stats = validate_market(payload, args.strict_featured)
+    if args.max_age_hours > 0:
+        updated_at = parse_timestamp(payload.get("updated_at") if isinstance(payload, dict) else None)
+        if updated_at is None:
+            errors.append("updated_at 必须是可解析的 ISO 时间")
+        else:
+            now = datetime.now(updated_at.tzinfo)
+            age_hours = (now - updated_at).total_seconds() / 3600
+            stats["age_hours"] = round(age_hours, 1)
+            if age_hours > args.max_age_hours:
+                errors.append(
+                    f"updated_at 已过期 {age_hours:.1f} 小时，超过允许的 {args.max_age_hours:g} 小时"
+                )
+            elif age_hours < -2:
+                warnings.append(f"updated_at 比当前时间超前 {-age_hours:.1f} 小时，请检查时区")
     for warning in warnings:
         print(f"[WARN] {warning}")
     for error in errors:
@@ -126,7 +162,7 @@ def main() -> int:
 
     print(
         "[OK] external_market.json 校验通过 "
-        f"items={stats['items']} price={stats['with_price']} change={stats['with_change']}"
+        f"items={stats['items']} price={stats['with_price']} change={stats['with_change']} age_hours={stats.get('age_hours', 'n/a')}"
     )
     return 0
 

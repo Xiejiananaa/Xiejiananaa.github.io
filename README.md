@@ -70,6 +70,8 @@ data/dashboard_data.js             双击 index.html 时的本地数据桥接（
 data/internal/dashboard_data.json  内部版数据，禁止公开
 
 scripts/run_sap_pipeline.ps1        SAP 抓取 → 翻译 → 脱敏 → 编译 → 校验
+scripts/run_daily_automation.ps1     第一阶段一键总控：行情校验 → SAP → 校验 → 提交 → 推送
+运行每日自动化.bat                   第一阶段一键入口；WorkBuddy 和 Windows 定时任务共用
 运行SAP流水线.bat                   备用入口；失败时使用 powershell.exe 命令
 scripts/generate_data.py           Excel + 行情 → dashboard_data.json + dashboard_data.js
 scripts/validate_external_market.py 检查 WorkBuddy 行情字段与比赛重点品种
@@ -79,6 +81,7 @@ scripts/build_cloudflare_site.mjs  Cloudflare 内部版构建辅助
 
 .github/workflows/deploy-pages.yml GitHub Pages 自动部署
 WORKBUDDY_GUIDE.md                 WorkBuddy 每日执行说明书
+delivery_templates/WorkBuddy第一阶段一键提示词.md  WorkBuddy 第一阶段一键执行提示词
 TASKS.md                           项目任务清单
 ```
 
@@ -383,16 +386,15 @@ https://xiejiananaa.github.io/?route=ai/workbuddy
 完整顺序：
 
 ```text
-1. git pull --rebase
+1. git pull --rebase origin main
 2. 抓取公开行情并写入 data/external_market.json
-3. 执行 scripts/validate_external_market.py --strict-featured
-4. 执行 scripts/run_sap_pipeline.ps1 -MaskMode 部分
-5. 检查脚本退出码，失败则停止
-6. 只提交 external_market.json 和 dashboard_data.json
-7. git push origin main
+3. 执行 scripts/run_daily_automation.ps1
+4. 总控脚本校验行情时效、执行 SAP、脱敏、生成 JSON
+5. 严格检查 ZWM002 / ME2L / MB51 三路状态
+6. 自动校验、提交白名单数据并推送 main
+7. 检查 daily_run_latest.json 的 status=ok
 8. GitHub Actions 自动部署
 ```
-
 `run_sap_pipeline.ps1` 内部会完成：
 
 ```text
@@ -420,16 +422,23 @@ WorkBuddy 不负责：
 也可以双击：
 
 ```text
-更新比赛页面.bat
+运行每日自动化.bat
 ```
+
+WorkBuddy 负责先更新 `external_market.json`，随后由这个入口完成全部发布步骤。
 
 它会依次执行：
 
-1. 生成比赛版数据
-2. 校验数据
-3. 构建单文件分享版
+1. 校验外部行情字段与 48 小时时效
+2. 抓取 ZWM002、ME2L、MB51
+3. 严格检查三路抓取状态
+4. 翻译、部分脱敏、生成 JSON / JS
+5. 执行看板安全校验与基线校验
+6. 构建单文件分享版
+7. 只提交公开数据并推送 GitHub
+8. 写入 `daily_run_latest.json` 运行报告
 
-之后双击 `启动页面.bat` 打开本地页面。
+之后可双击 `启动页面.bat` 做本地验收。
 
 ## 8. 内部版运行规则
 

@@ -81,7 +81,7 @@ Copy-RequiredFile (Join-Path $PlatformRoot "delivery_templates\供应雷达_脚�
 
 # 项目二：供应链可视化平台
 $PlatformProject = Join-Path $BundleRoot "02_供应链可视化平台"
-@("README.md","WORKBUDDY_GUIDE.md","TASKS.md","index.html","requirements.txt","wrangler.jsonc",".nojekyll") | ForEach-Object {
+@("README.md","WORKBUDDY_GUIDE.md","TASKS.md","index.html","requirements.txt","wrangler.jsonc",".nojekyll","运行每日自动化.bat") | ForEach-Object {
   Copy-RequiredFile (Join-Path $PlatformRoot $_) (Join-Path $PlatformProject $_)
 }
 @("dashboard_data.json","dashboard_data.js","external_market.json","external_market.example.json") | ForEach-Object {
@@ -93,7 +93,7 @@ Get-ChildItem -LiteralPath (Join-Path $PlatformRoot "assets") -File | ForEach-Ob
 Get-ChildItem -LiteralPath (Join-Path $PlatformRoot "assets\fonts") -File | ForEach-Object {
   Copy-RequiredFile $_.FullName (Join-Path $PlatformProject "assets\fonts\$($_.Name)")
 }
-@("run_sap_pipeline.ps1","generate_data.py","validate_external_market.py","validate_dashboard_data.py","build_share_html.py","build_cloudflare_site.mjs","supplier_region.py","脚本功能索引.md") | ForEach-Object {
+@("run_sap_pipeline.ps1","run_daily_automation.ps1","generate_data.py","validate_external_market.py","validate_dashboard_data.py","build_share_html.py","build_cloudflare_site.mjs","supplier_region.py","脚本功能索引.md") | ForEach-Object {
   Copy-RequiredFile (Join-Path $PlatformRoot "scripts\$_") (Join-Path $PlatformProject "scripts\$_")
 }
 Copy-RequiredFile (Join-Path $PlatformRoot "worker\index.js") (Join-Path $PlatformProject "worker\index.js")
@@ -104,6 +104,7 @@ Copy-RequiredFile (Join-Path $PlatformRoot "dist\供应雷达-分享讨论版.ht
 # WorkBuddy 协同
 Copy-RequiredFile (Join-Path $PlatformRoot "WORKBUDDY_GUIDE.md") (Join-Path $BundleRoot "03_WorkBuddy协同\WORKBUDDY_GUIDE.md")
 Copy-RequiredFile (Join-Path $PlatformRoot "delivery_templates\WorkBuddy每日执行清单.md") (Join-Path $BundleRoot "03_WorkBuddy协同\每日执行清单.md")
+Copy-RequiredFile (Join-Path $PlatformRoot "delivery_templates\WorkBuddy第一阶段一键提示词.md") (Join-Path $BundleRoot "03_WorkBuddy协同\第一阶段一键提示词.md")
 
 # 文档归档
 @("竞品借鉴分析.md","页面改造方案.md") | ForEach-Object {
