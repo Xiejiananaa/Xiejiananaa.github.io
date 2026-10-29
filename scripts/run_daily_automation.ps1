@@ -72,6 +72,36 @@ function Release-RunMutex {
   if ($Mutex -and $Acquired) { try { $Mutex.ReleaseMutex() } catch {} }
   if ($Mutex) { try { $Mutex.Dispose() } catch {} }
 }
+function Export-GitBlobToFile {
+  param(
+    [string]$GitSpec,
+    [string]$Destination
+  )
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "git"
+  $psi.Arguments = "show $GitSpec"
+  $psi.WorkingDirectory = $ProjectRoot
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.CreateNoWindow = $true
+
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $psi
+  if (-not $process.Start()) { throw "无法启动 git show：$GitSpec" }
+
+  $output = [IO.File]::Open($Destination, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+  try {
+    $process.StandardOutput.BaseStream.CopyTo($output)
+  } finally {
+    $output.Dispose()
+  }
+  $stderr = $process.StandardError.ReadToEnd()
+  $process.WaitForExit()
+  if ($process.ExitCode -ne 0) {
+    throw "读取 Git 基线失败：$GitSpec；$stderr"
+  }
+}
 function Get-DirtyPaths {
   $lines = @(& git status --porcelain --untracked-files=all)
   if ($LASTEXITCODE -ne 0) { throw "读取 Git 状态失败" }
@@ -184,9 +214,7 @@ try {
 
   $report.stage = "baseline_validation"
   Write-Host "[5/7] 执行与上一版的基线校验..."
-  $previousJson = @(& git show "HEAD:data/dashboard_data.json")
-  if ($LASTEXITCODE -ne 0) { throw "读取上一版 dashboard_data.json 失败" }
-  [IO.File]::WriteAllText($baselinePath, ($previousJson -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
+  Export-GitBlobToFile -GitSpec "HEAD:data/dashboard_data.json" -Destination $baselinePath
   Invoke-Checked "基线数据校验" {
     & $Python "scripts\validate_dashboard_data.py" --mode competition --baseline $baselinePath --max-drop-pct $MaxDropPct
   }
