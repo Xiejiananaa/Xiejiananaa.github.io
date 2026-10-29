@@ -26,6 +26,9 @@ $runtimeRoot = if ($env:SAPRADAR_OUTPUT_DIR) {
 }
 $reportPath = Join-Path $runtimeRoot "daily_run_latest.json"
 $baselinePath = Join-Path $runtimeRoot "daily_baseline_$runId.json"
+$lockPath = Join-Path $runtimeRoot "daily_run.lock"
+$lockStream = $null
+$lockAcquired = $false
 $report = [ordered]@{
   run_id = $runId
   status = "running"
