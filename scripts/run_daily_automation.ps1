@@ -26,9 +26,8 @@ $runtimeRoot = if ($env:SAPRADAR_OUTPUT_DIR) {
 }
 $reportPath = Join-Path $runtimeRoot "daily_run_latest.json"
 $baselinePath = Join-Path $runtimeRoot "daily_baseline_$runId.json"
-$lockPath = Join-Path $runtimeRoot "daily_run.lock"
-$lockStream = $null
-$lockAcquired = $false
+$runMutex = $null
+$mutexAcquired = $false
 $report = [ordered]@{
   run_id = $runId
   status = "running"
@@ -65,6 +64,14 @@ function Invoke-Checked([string]$Label, [scriptblock]$Action) {
   if ($LASTEXITCODE -ne 0) { throw "$Label 失败，退出码：$LASTEXITCODE" }
 }
 
+function Release-RunMutex {
+  param(
+    [System.Threading.Mutex]$Mutex,
+    [bool]$Acquired
+  )
+  if ($Mutex -and $Acquired) { try { $Mutex.ReleaseMutex() } catch {} }
+  if ($Mutex) { try { $Mutex.Dispose() } catch {} }
+}
 function Get-DirtyPaths {
   $lines = @(& git status --porcelain --untracked-files=all)
   if ($LASTEXITCODE -ne 0) { throw "读取 Git 状态失败" }
@@ -85,18 +92,12 @@ function Assert-AllowedChanges([string[]]$Paths) {
 
 try {
   if (-not $CheckOnly) {
-    if (-not (Test-Path -LiteralPath $runtimeRoot)) { New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null }
-    try {
-      $lockStream = [IO.File]::Open($lockPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
-      $lockAcquired = $true
-      $lockBytes = [Text.Encoding]::UTF8.GetBytes("run_id=$runId`r`nstarted_at=$($report.started_at)`r`npid=$PID`r`n")
-      $lockStream.Write($lockBytes, 0, $lockBytes.Length)
-      $lockStream.Flush()
-    } catch {
-      throw "已有每日自动化任务正在运行，或存在未清理的锁文件：$lockPath"
+    $runMutex = [System.Threading.Mutex]::new($false, "Local\SupplyRadarDailyAutomation")
+    $mutexAcquired = $runMutex.WaitOne(0)
+    if (-not $mutexAcquired) {
+      throw "已有每日自动化任务正在运行，本次任务停止"
     }
   }
-
   Assert-Directory $ProjectRoot "供应链平台目录"
   Assert-Directory $SapRoot "SAP 自动化目录"
   Assert-File $Python "平台 Python"
@@ -106,9 +107,7 @@ try {
   Assert-File (Join-Path $ProjectRoot "scripts\validate_dashboard_data.py") "看板数据校验脚本"
   Set-Location $ProjectRoot
 
-  $report.stage = "preflight"$lockPath = Join-Path $runtimeRoot "daily_run.lock"
-$lockStream = $null
-$lockAcquired = $false
+  $report.stage = "preflight"
 
   $dirtyPaths = @(Get-DirtyPaths)
   if ($CheckOnly) {
@@ -147,6 +146,7 @@ $lockAcquired = $false
     $report.message = "环境检查通过；未执行 SAP、生成或发布"
     Save-RunReport
     Write-Host "[CHECK] 第一阶段总控脚本检查通过"
+    Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
     exit 0
   }
 
@@ -202,6 +202,7 @@ $lockAcquired = $false
     Save-RunReport
     Write-Host "[6/7] 数据没有变化，跳过提交"
     Write-Host "[7/7] 完成"
+    Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
     exit 0
   }
 
@@ -222,6 +223,7 @@ $lockAcquired = $false
     $report.message = "已完成生成、校验和本地提交；按参数跳过推送"
     Save-RunReport
     Write-Host "[7/7] 已按参数跳过推送"
+    Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
     exit 0
   }
 
@@ -233,16 +235,17 @@ $lockAcquired = $false
   Save-RunReport
   Write-Host "每日自动化完成"
   Write-Host "运行报告：$reportPath"
+  Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
   exit 0
 } catch {
   $report.status = "failed"
   $report.message = $_.Exception.Message
   Save-RunReport
-  Write-Error $_
+  Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
+  Write-Error $_ -ErrorAction Continue
   Write-Host "失败报告：$reportPath"
   exit 1
 } finally {
   if (Test-Path -LiteralPath $baselinePath) { Remove-Item -LiteralPath $baselinePath -Force -ErrorAction SilentlyContinue }
-  if ($lockStream) { $lockStream.Dispose() }
-  if ($lockAcquired -and (Test-Path -LiteralPath $lockPath)) { Remove-Item -LiteralPath $lockPath -Force -ErrorAction SilentlyContinue }
+  Release-RunMutex -Mutex $runMutex -Acquired $mutexAcquired
 }
