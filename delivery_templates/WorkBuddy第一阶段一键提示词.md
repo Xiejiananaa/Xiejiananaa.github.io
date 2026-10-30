@@ -49,6 +49,9 @@ D:\Users\22614\Documents\供应链平台\data\external_market.json
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_daily_automation.ps1"
 ```
+> 执行环境要求：命令超时至少设置为 10 分钟（600000 ms），不要使用默认 2 分钟。
+>
+> 总控脚本在 `git push` 首次失败时会等待 5 秒并自动重试 1 次；只有两次都失败才发送失败告警。
 
 脚本会自动完成：
 

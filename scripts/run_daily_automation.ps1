@@ -40,6 +40,8 @@ $report = [ordered]@{
   branch = $Branch
   external_max_age_hours = $ExternalMaxAgeHours
   git_commit = $null
+  push_attempts = 0
+  push_retry_used = $false
   message = ""
 }
 
@@ -256,10 +258,33 @@ try {
   }
 
   Write-Host "[7/7] 推送 origin/$Branch ..."
-  Invoke-Checked "git push" { git push origin $Branch }
+  $pushSucceeded = $false
+  $lastPushExit = $null
+  for ($attempt = 1; $attempt -le 2; $attempt++) {
+    $report.push_attempts = $attempt
+    Write-Host "推送尝试 $attempt/2 ..."
+    & git push origin $Branch
+    if ($LASTEXITCODE -eq 0) {
+      $pushSucceeded = $true
+      break
+    }
+    $lastPushExit = $LASTEXITCODE
+    if ($attempt -lt 2) {
+      $report.push_retry_used = $true
+      Write-Warning "git push 首次失败（退出码 $lastPushExit），5 秒后自动重试一次..."
+      Start-Sleep -Seconds 5
+    }
+  }
+  if (-not $pushSucceeded) {
+    throw "git push 连续 2 次失败，最后退出码：$lastPushExit"
+  }
   $report.status = "ok"
   $report.stage = "pushed"
-  $report.message = "数据已提交并推送，等待 GitHub Actions 自动部署"
+  if ($report.push_retry_used) {
+    $report.message = "数据已提交，首次推送失败后自动重试成功，等待 GitHub Actions 自动部署"
+  } else {
+    $report.message = "数据已提交并推送，等待 GitHub Actions 自动部署"
+  }
   Save-RunReport
   Write-Host "每日自动化完成"
   Write-Host "运行报告：$reportPath"

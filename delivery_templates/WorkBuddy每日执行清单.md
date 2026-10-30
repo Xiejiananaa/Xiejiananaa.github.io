@@ -12,6 +12,8 @@
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "02_供应链可视化平台\scripts\run_daily_automation.ps1"
+
+> 工具超时请设置为至少 10 分钟（600000 ms）。push 首次失败会自动等待 5 秒重试 1 次。
 ```
 
 5. 检查脚本退出码必须为 `0`

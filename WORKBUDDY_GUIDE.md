@@ -212,6 +212,8 @@ WorkBuddy 写入并保存 `data\external_market.json` 后执行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Users\22614\Documents\供应链平台\scripts\run_daily_automation.ps1"
+
+> WorkBuddy 工具超时必须设置为至少 10 分钟（600000 ms）。总控脚本的 git push 首次失败后会自动等待 5 秒并重试 1 次。
 if ($LASTEXITCODE -ne 0) { throw "每日自动化失败，停止发布并发送告警" }
 ```
 
